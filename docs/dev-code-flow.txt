@@ -1,0 +1,98 @@
+For developers - code workflow
+================================================================================
+
+Overview
+--------------------------------------------------------------------------------
+TOX-G uses a very simple lexing, parsing, and code building system.  The
+internal system uses events to make it easy to extend.  This document will
+give you a "high level" overview of how the system functions.
+
+
+Standard code flow
+--------------------------------------------------------------------------------
+Here's a basic tree (looking at this alone may not make it clearer, read below):
+
+-> ToxgTemplateList
+	-> ToxgTemplate
+		-> ToxgParser
+			-> ToxgSource
+				-> ToxgToken
+					-> ToxgException
+			-> ToxgOverlay
+			-> ToxgPrebuilder
+			-> ToxgBuilder
+				-> ToxgStandardElements
+					-> ToxgExpression
+				-> ToxgErrors
+
+Compiling starts with ToxgTemplate.  It primarily sets up other classes.
+
+ToxgTemplate creates a ToxgParser, which in turn creates a ToxgSource.
+
+ToxgSource converts the template file into ToxgTokens which it hands back to
+the ToxgParser.
+
+ToxgParser's job is to make sure these tokens are properly nested, take care
+of some other parsing things, and also to fire off parsing events to the
+other objects created by ToxgTemplate, such as ToxgOverlay, ToxgBuilder, and
+ToxgPrebuilder.
+
+ToxgOverlay is created by ToxgTemplate as well.  When the parser tells it
+about something interesting, it "inserts" the alteration right into the
+parsing stream.
+
+The first pass goes to ToxgPrebuilder.  This mainly collects information about
+the templates used so the ToxgBuilder already has this information from the
+beginning.
+
+After that, it's ToxgBuilder's turn.  This puts together the actual PHP code
+for the template, and also embeds debugging info.  It directly handles core
+operations, such as using and declaring templates.
+
+ToxgBuilder has its own event system, and this fires off events to get any
+elements used (such as tpl:foreach) processed.  ToxgStandardElements handles
+all the built in ones.
+
+
+The main event system
+--------------------------------------------------------------------------------
+Both ToxgParser and ToxgBuilder have event systems at their center.
+
+ToxgOverlay listens to the parser to insert the alterations at the appropriate
+places in the parsing process.  When a matching element is found, it pushes
+extra data onto the ToxgSource stack the parser has.  As far as the parser is
+concerned, the alerations were part of the source file itself.
+
+The ToxgParser actually runs twice, first sending events to the ToxgPrebuilder,
+then sending them to the ToxgBuilder.  It does this because the prebuilder
+needs to know about all the templates before the first ToxgBuilder starts its
+work.
+
+After sending these events, the ToxgParser's job is done.
+
+In the ToxgBuilder, events are fired off to generate the actual code for the
+final template.  The only thing it manages itself is the code flow and debug
+information for file/line numbers in errors.
+
+
+The tokenizing/lexing process
+--------------------------------------------------------------------------------
+ToxgSource objects represent a source of TOX-G data, and process it into tokens
+for ToxgParser and ToxgOverlay to use.
+
+When the ToxgSource has completely processed a token, it creates a ToxgToken
+object, which holds information about the token (and parses attributes) as well
+as file and line information.
+
+The token itself is where most exceptions come from, because the token retains
+all the necessary file and line information to generate quality error messages.
+
+
+Actually building the code
+--------------------------------------------------------------------------------
+ToxgStandardElements hooks into the ToxgBuilder, and is asked to provide the
+ToxgBuilder with code for any element it hits.  It's in here that the actual
+processing happens.
+
+Whenever an attribute is an expression, or similar, ToxgExpression is used to
+do any parsing that's necessary.
