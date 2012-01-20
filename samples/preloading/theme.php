@@ -14,7 +14,7 @@ class MyTheme extends SampleToxgTheme
 		$this->templates->listenEmit($this->nsuri, 'dynamic', array($this, 'site_dynamic'));
 	}
 
-	public function site_dynamic(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	public function site_dynamic(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
 	{
 		// This just loads the data when/if the template is ever used.
 		// Inside there, we'll load the data smartly based on what's needed.
@@ -33,7 +33,7 @@ class MyTheme extends SampleToxgTheme
 		// Do we need to spend time getting the descriptions for each item?
 		$need_desc = $this->isTemplateUsed('dynamic-desc');
 		// That's just a helper for the following:
-		//$need_desc = ToxgTemplate::isTemplateUsed($this->nsuri, 'dynamic-desc');
+		//$need_desc = Toxg\Template::isTemplateUsed($this->nsuri, 'dynamic-desc');
 
 		if ($need_desc)
 			return array(

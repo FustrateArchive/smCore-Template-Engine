@@ -1,6 +1,8 @@
 <?php
 
-class ToxgToken
+namespace ToxG;
+
+class Token
 {
 	public $data = null;
 	public $type = 'tag-start';
@@ -17,7 +19,7 @@ class ToxgToken
 	protected $data_len = 0;
 	protected $source = null;
 
-	public function __construct(array $token, ToxgSource $source)
+	public function __construct(array $token, Source $source)
 	{
 		$this->source = $source;
 
@@ -68,7 +70,7 @@ class ToxgToken
 		$params = func_get_args();
 		$params = array_slice($params, 1);
 
-		throw new ToxgExceptionFile($this->file, $this->line, $id_message, $params);
+		throw new ExceptionFile($this->file, $this->line, $id_message, $params);
 	}
 
 	protected function parseStart()
@@ -138,14 +140,14 @@ class ToxgToken
 			// Skip the : after the namespace.
 			$this->data_pos++;
 
-			if (!ToxgSource::validNCName($ns))
+			if (!Source::validNCName($ns))
 				$this->toss('syntax_name_ns_invalid');
 		}
 		else
 			$ns = '';
 
 		$name = $this->eatUntil($after_name);
-		if (!ToxgSource::validNCName($name))
+		if (!Source::validNCName($name))
 			$this->toss('syntax_name_invalid');
 
 		$this->eatWhite();
@@ -247,7 +249,7 @@ class ToxgToken
 		if ($ns === false)
 		{
 			$token->ns = 'tpl';
-			$token->nsuri = ToxgTemplate::TPL_NAMESPACE;
+			$token->nsuri = Template::TPL_NAMESPACE;
 		}
 		else
 		{
@@ -258,5 +260,3 @@ class ToxgToken
 		return $token;
 	}
 }
-
-?>

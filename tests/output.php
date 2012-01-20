@@ -42,7 +42,7 @@ function test_output_006($harness)
 function test_output_007($harness)
 {
 	$harness->expectOutput('<>& <>&');
-	$harness->addData('<tpl:template name="my:output"><tpl:set var="{$x}" value="\'<>&\'" /><tpl:output value="\'<>&\'" as="raw" /> <tpl:output value="{$x}" as="raw" /></tpl:template>');
+	$harness->addData('<tpl:template name="my:output"><tpl:set var="{$x}" value="\'<>&\'" /><tpl:output value="\'<>&\'" escape="false" /> <tpl:output value="{$x}" escape="false" /></tpl:template>');
 }
 
 function test_output_009($harness)
@@ -247,7 +247,7 @@ function test_output_032($harness)
 	$harness->expectOutput('pass');
 	$harness->addData('
 		<tpl:container xmlns:blah="http://www.example.com/#blah1">
-			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah1\', \'checkme\')">pass<tpl:else />fail</tpl:if></tpl:template>
+			<tpl:template name="my:output"><tpl:if test="Toxg\Template::isTemplateUsed(\'http://www.example.com/#blah1\', \'checkme\')">pass<tpl:else />fail</tpl:if></tpl:template>
 			<tpl:template name="my:stuff"><blah:checkme /></tpl:template>
 		</tpl:container>');
 }
@@ -257,7 +257,7 @@ function test_output_033($harness)
 	$harness->expectOutput('pass');
 	$harness->addData('
 		<tpl:container xmlns:blah="http://www.example.com/#blah2">
-			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah2\', \'checkme\')">pass<tpl:else />fail</tpl:if></tpl:template>
+			<tpl:template name="my:output"><tpl:if test="Toxg\Template::isTemplateUsed(\'http://www.example.com/#blah2\', \'checkme\')">pass<tpl:else />fail</tpl:if></tpl:template>
 			<tpl:template name="my:stuff"></tpl:template>
 		</tpl:container>');
 	$harness->addOverlay('<tpl:alter match="my:stuff" position="after" xmlns:blah="http://www.example.com/#blah2"><blah:checkme /></tpl:alter>');
@@ -268,7 +268,7 @@ function test_output_034($harness)
 	$harness->expectOutput('pass');
 	$harness->addData('
 		<tpl:container xmlns:blah="http://www.example.com/#blah3">
-			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah3\', \'checkme\')">fail<tpl:else />pass</tpl:if></tpl:template>
+			<tpl:template name="my:output"><tpl:if test="Toxg\Template::isTemplateUsed(\'http://www.example.com/#blah3\', \'checkme\')">fail<tpl:else />pass</tpl:if></tpl:template>
 			<tpl:template name="blah:checkme"></tpl:template>
 		</tpl:container>');
 }
@@ -278,7 +278,7 @@ function test_output_035($harness)
 	$harness->expectOutput('pass');
 	$harness->addData('
 		<tpl:container xmlns:blah="http://www.example.com/#blah4">
-			<tpl:template name="my:output"><tpl:if test="ToxgTemplate::isTemplateUsed(\'http://www.example.com/#blah4\', \'checkme\')">fail<tpl:else />pass</tpl:if></tpl:template>
+			<tpl:template name="my:output"><tpl:if test="Toxg\Template::isTemplateUsed(\'http://www.example.com/#blah4\', \'checkme\')">fail<tpl:else />pass</tpl:if></tpl:template>
 		</tpl:container>');
 	$harness->addOverlay('<tpl:alter match="my:stuff" position="after" xmlns:blah="http://www.example.com/#blah4"><blah:checkme /></tpl:alter>');
 }

@@ -1,6 +1,8 @@
 <?php
 
-class ToxgTemplate
+namespace ToxG;
+
+class Template
 {
 	const VERSION = '0.1-alpha6';
 	// !!! Need a domain name/final name/etc.?
@@ -19,7 +21,7 @@ class ToxgTemplate
 
 	public function __construct($source_file, $builder = null)
 	{
-		$this->builder = $builder !== null ? $builder : new ToxgBuilder();
+		$this->builder = $builder !== null ? $builder : new Builder();
 		$this->source_files[] = $source_file;
 	}
 
@@ -37,7 +39,7 @@ class ToxgTemplate
 	public function addOverlays(array $files)
 	{
 		foreach ($files as $file)
-			$this->overlays[] = new ToxgOverlay($file, $this->overlayCalls);
+			$this->overlays[] = new Overlay($file, $this->overlayCalls);
 	}
 
 	public function setNamespaces(array $uris)
@@ -50,9 +52,9 @@ class ToxgTemplate
 		$this->common_vars = $names;
 	}
 
-	public function disableDebugging($disable = true)
+	public function setDebugging($enabled = true)
 	{
-		$this->debugging = !$disable;
+		$this->debugging = (boolean) $enabled;
 	}
 
 	public function listenEmit($nsuri, $name, $callback)
@@ -98,7 +100,7 @@ class ToxgTemplate
 	public function compileFirstPass()
 	{
 		if ($this->prebuilder === null)
-			$this->prebuilder = new ToxgPrebuilder();
+			$this->prebuilder = new Prebuilder();
 
 		// Tell the prebuilder who we are so it can apply template-local stuff properly.
 		$this->setPrebuilderCurrentTemplate();
@@ -126,7 +128,7 @@ class ToxgTemplate
 	public function compileSecondPass($cache_file)
 	{
 		// Now set up the builder (which will be eventually called by the parser.)
-		$this->builder->disableDebugging(!$this->debugging);
+		$this->builder->setDebugging($this->debugging);
 		$this->builder->setCommonVars($this->common_vars);
 		$this->builder->setCacheFile($cache_file);
 
@@ -165,18 +167,17 @@ class ToxgTemplate
 
 	protected function createParser($source_file)
 	{
-		return new ToxgParser($source_file);
+		return new Parser($source_file);
 	}
 
 	public static function callTemplate($nsuri, $name, $params, $side = 'both')
 	{
-		$prefix = ToxgExpression::makeTemplateName($nsuri, $name . '--toxg-direct');
+		$prefix = Expression::makeTemplateName($nsuri, $name . '--toxg-direct');
 		$above = $prefix . '_above';
 		$below = $prefix . '_below';
 
-		// !!! Should this be a ToxgException?
 		if (!function_exists($above))
-			throw new Exception('Unable to find template named ' . $name . ' in namespace ' . $nsuri);
+			throw new Exception('template_not_found', $name, $nsuri);
 
 		if ($side === 'both' || $side == 'above')
 			$above($params);
@@ -200,4 +201,3 @@ class ToxgTemplate
 		return isset(self::$usage[$nsuri][$name]);
 	}
 }
-?>

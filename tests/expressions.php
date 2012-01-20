@@ -252,12 +252,12 @@ function test_expression_033($harness)
 
 function test_expression_034($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{%date:$x}" />');
+	$harness->addWrappedData('<tpl:output value="{$x %date}" />');
 }
 
 function test_expression_035($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{%date:$x:\'g:i A\'}" />');
+	$harness->addWrappedData('<tpl:output value="{$x %date:\'g:i A\'}" />');
 }
 
 function test_expression_036($harness)
@@ -267,7 +267,7 @@ function test_expression_036($harness)
 
 function test_expression_037($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{#lang:{%date:$x}}" />');
+	$harness->addWrappedData('<tpl:output value="{#lang:{$x %date}}" />');
 }
 
 ?>

@@ -1,6 +1,8 @@
 <?php
 
-class ToxgOverlay
+namespace ToxG;
+
+class Overlay
 {
 	const RECURSION_LIMIT = 10;
 
@@ -13,13 +15,13 @@ class ToxgOverlay
 
 	public function __construct($file, array $called_overlays = array())
 	{
-		if ($file instanceof ToxgSource)
+		if ($file instanceof Source)
 		{
 			$this->source = $file;
 			$this->source->initialize();
 		}
 		elseif ($file !== null)
-			$this->source = new ToxgSourceFile($file);
+			$this->source = new SourceFile($file);
 
 		// This array is indexed by position.
 		$this->alters = array(
@@ -37,7 +39,7 @@ class ToxgOverlay
 		$this->source->setNamespaces($uris);
 	}
 
-	public function setupParser(ToxgParser $parser)
+	public function setupParser(Parser $parser)
 	{
 		$parser->listen('parsedElement', array($this, 'parsedElement'));
 	}
@@ -45,16 +47,16 @@ class ToxgOverlay
 	public function parse()
 	{
 		if ($this->source === null)
-			throw new ToxgException('overlay_no_source');
+			throw new Exception('overlay_no_source');
 
 		while ($token = $this->source->readToken())
 			$this->parseToken($token);
 
 		if ($this->parse_state !== 'outside')
-			throw new ToxgException('overlay_incomplete');
+			throw new Exception('overlay_incomplete');
 	}
 
-	public function parseToken(ToxgToken $token)
+	public function parseToken(Token $token)
 	{
 		switch ($this->parse_state)
 		{
@@ -74,14 +76,14 @@ class ToxgOverlay
 		return $this->parse_state !== 'outside';
 	}
 
-	protected function parseOutside(ToxgToken $token)
+	protected function parseOutside(Token $token)
 	{
 		switch ($token->type)
 		{
 		case 'tag-start':
 		case 'tag-end':
 			// We're only interested in tpl:alter or a tpl:container.
-			if ($token->nsuri != ToxgTemplate::TPL_NAMESPACE)
+			if ($token->nsuri != Template::TPL_NAMESPACE)
 				$token->toss('overlay_element_outside_alter', $token->prettyName());
 
 			if ($token->name === 'alter')
@@ -105,7 +107,7 @@ class ToxgOverlay
 			break;
 
 		case 'tag-empty':
-			if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE)
+			if ($token->nsuri == Template::TPL_NAMESPACE)
 			{
 				if ($token->name === 'alter')
 					$token->toss('overlay_alter_must_be_not_empty');
@@ -121,12 +123,12 @@ class ToxgOverlay
 		}
 	}
 
-	protected function parseInAlter(ToxgToken $token)
+	protected function parseInAlter(Token $token)
 	{
 		switch ($token->type)
 		{
 		case 'tag-end':
-			if ($token->type === 'tag-end' && $token->nsuri == ToxgTemplate::TPL_NAMESPACE && $token->name === 'alter')
+			if ($token->type === 'tag-end' && $token->nsuri == Template::TPL_NAMESPACE && $token->name === 'alter')
 			{
 				// Okay, let's end it.
 				$this->finalizeAlter();
@@ -141,7 +143,7 @@ class ToxgOverlay
 		}
 	}
 
-	protected function setupAlter(ToxgToken $token)
+	protected function setupAlter(Token $token)
 	{
 		if (!isset($token->attributes['match'], $token->attributes['position']))
 			$token->toss('tpl_alter_missing_match_position');
@@ -202,12 +204,12 @@ class ToxgOverlay
 			$this->parse_alter['match'][] = $nsuri . ':' . $name;
 		}
 
-		$this->parse_alter['source'] = new ToxgSource($this->parse_alter['data'], $this->parse_alter['file'], $this->parse_alter['line']);
+		$this->parse_alter['source'] = new Source($this->parse_alter['data'], $this->parse_alter['file'], $this->parse_alter['line']);
 		if ($this->source !== null)
 			$this->parse_alter['source']->copyNamespaces($this->source);
 	}
 
-	public function parsedElement(ToxgToken $token, ToxgParser $parser)
+	public function parsedElement(Token $token, Parser $parser)
 	{
 		// This is where we hook into the parser.  It's sorta complicated, because of positions.
 		// When you use a template or something, we modify its usage inline.
@@ -217,7 +219,7 @@ class ToxgOverlay
 		// For "after": AFTER template end tag.
 
 		// We don't care about instructions, just templates.
-		if ($token->nsuri == ToxgTemplate::TPL_NAMESPACE)
+		if ($token->nsuri == Template::TPL_NAMESPACE)
 			return;
 
 		$fqname = $token->nsuri . ':' . $token->name;
@@ -251,12 +253,12 @@ class ToxgOverlay
 			$this->insertMatchedAlters('after', 'defer', $close_token, $parser);
 		}
 		// Since we convert elements to pairs from empty, we don't care about tag-empty.
-		// !!! Should this be a ToxgException?
+		// !!! Should this be a Exception?
 		else
 			throw new Exception('Unexpected token type: ' . $token->type);
 	}
 
-	protected function insertMatchedAlters($position, $defer, ToxgToken $token, ToxgParser $parser)
+	protected function insertMatchedAlters($position, $defer, Token $token, Parser $parser)
 	{
 		// We need the fully-qualified name to do matching.
 		$fqname = $token->nsuri . ':' . $token->name;
@@ -272,4 +274,3 @@ class ToxgOverlay
 		}
 	}
 }
-?>

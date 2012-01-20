@@ -1,7 +1,7 @@
 <?php
 
 /**
- * class ToxgSource
+ * class Source
  *
  * Represents the source code to a template or overlay.  Provides lexing facilities.
  *
@@ -31,13 +31,16 @@
  *
  * The basic use of this class will look like:
  *
- * $source = new ToxgSource($data, 'filename.tox');
+ * $source = new Source($data, 'filename.tox');
  * while ($token = $source->readToken())
  *     do_something($token);
  *
  * $nsuri = $source->getNamespace($ns);
  */
-class ToxgSource
+
+namespace ToxG;
+
+class Source
 {
 	// !!! Allow longer?
 	const MAX_TAG_LENGTH = 2048;
@@ -55,9 +58,9 @@ class ToxgSource
 	public function __construct($data, $file, $line = 1)
 	{
 		if ($data === false)
-			throw new ToxgExceptionFile($file, 0, 'parsing_cannot_read');
+			throw new ExceptionFile($file, 0, 'parsing_cannot_read');
 		if (!is_resource($data) && !is_string($data) && !is_array($data))
-			throw new ToxgExceptionFile($file, 0, 'parsing_not_supported', gettype($data));
+			throw new ExceptionFile($file, 0, 'parsing_not_supported', gettype($data));
 
 		$this->data = $data;
 		$this->file = $file;
@@ -83,7 +86,7 @@ class ToxgSource
 			if (is_resource($this->data))
 			{
 				if (!@rewind($this->data))
-					throw new ToxgExceptionFile($this->file, 0, 'parsing_cannot_seek');
+					throw new ExceptionFile($this->file, 0, 'parsing_cannot_seek');
 
 				$this->data_buffer = '';
 			}
@@ -102,7 +105,7 @@ class ToxgSource
 		$this->namespaces[$name] = $uri;
 	}
 
-	public function copyNamespaces(ToxgSource $source)
+	public function copyNamespaces(Source $source)
 	{
 		foreach ($source->namespaces as $ns => $uri)
 			$this->namespaces[$ns] = $uri;
@@ -126,7 +129,7 @@ class ToxgSource
 		if ($this->isDataEOF())
 		{
 			if ($this->wait_comment !== false)
-				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_comment_unterminated', $this->wait_comment);
+				throw new ExceptionFile($this->file, $this->line, 'syntax_comment_unterminated', $this->wait_comment);
 			return false;
 		}
 
@@ -367,12 +370,12 @@ class ToxgSource
 			{
 				$quote = strpos($this->data_buffer, '"', $quote + 1);
 				if ($quote === false)
-					throw new ToxgExceptionFile($this->file, $this->line, 'syntax_tag_buffer_unmatched_quotes');
+					throw new ExceptionFile($this->file, $this->line, 'syntax_tag_buffer_unmatched_quotes');
 
 				$end_pos = $quote + 1;
 			}
 			else
-				throw new ToxgExceptionFile($this->file, $this->line, 'syntax_invalid_tag');
+				throw new ExceptionFile($this->file, $this->line, 'syntax_invalid_tag');
 		}
 
 		if ($type === 'tag')
@@ -421,7 +424,7 @@ class ToxgSource
 
 	protected function makeTokenObject($info)
 	{
-		return new ToxgToken($info, $this);
+		return new Token($info, $this);
 	}
 
 	protected function firstPosOf($find, $offset = 0)
@@ -457,4 +460,3 @@ class ToxgSource
 		return true;
 	}
 }
-?>

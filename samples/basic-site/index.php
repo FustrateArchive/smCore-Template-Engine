@@ -9,7 +9,7 @@ $theme->loadTemplates('templates');
 $theme->addLayer('main');
 
 $theme->addTemplate('home');
-$theme->context['site_name'] = 'My Site';
+$theme->context['site_name'] = 'my site';
 $theme->output();
 
 $time_et = microtime(true);

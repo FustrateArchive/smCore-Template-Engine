@@ -1,6 +1,8 @@
 <?php
 
-class ToxgTheme
+namespace ToxG;
+
+class Theme
 {
 	protected $nsuri = 'urn:site:template';
 	protected $extension = 'tpl';
@@ -34,11 +36,11 @@ class ToxgTheme
 		$this->compile_dir = $compile_dir;
 		$this->inherited_dirs = $inherited_dirs;
 
-		$this->templates = new ToxgTemplateList();
+		$this->templates = new TemplateList();
 
 		self::$namespaces = array(
 			'site' => $this->nsuri,
-			'tpl' => ToxgTemplate::TPL_NAMESPACE,
+			'tpl' => Template::TPL_NAMESPACE,
 		);
 	}
 
@@ -176,7 +178,7 @@ class ToxgTheme
 
 		if ($this->needs_compile)
 		{
-			ToxgStandardElements::useIn($this->templates);
+			StandardElements::useIn($this->templates);
 			$this->templates->setNamespaces(self::$namespaces);
 			$this->templates->compileAll();
 		}
@@ -199,7 +201,7 @@ class ToxgTheme
 
 	protected function callTemplate($name, $side, $nsuri = 'site')
 	{
-		$func = ToxgExpression::makeTemplateName(self::$namespaces[$nsuri], $name . '--toxg-direct') . '_' . $side;
+		$func = Expression::makeTemplateName(self::$namespaces[$nsuri], $name . '--toxg-direct') . '_' . $side;
 		$func($this->template_params);
 	}
 
@@ -208,5 +210,3 @@ class ToxgTheme
 		return self::$namespaces[$name];
 	}
 }
-
-?>

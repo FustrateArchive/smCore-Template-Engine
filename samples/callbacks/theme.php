@@ -16,7 +16,7 @@ class MyTheme extends SampleToxgTheme
 		$this->templates->listenEmitBasic('template', array($this, 'hookDynamic'));
 	}
 
-	public function hookDynamic(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	public function hookDynamic(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
 	{
 		list ($ns, $name) = explode(':', $attributes['name'], 2);
 		$nsuri = $token->getNamespace($ns);

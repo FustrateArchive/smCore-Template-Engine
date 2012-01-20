@@ -2,63 +2,73 @@
 
 function test_tags_output_001($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{$x}" as="html" />');
+	$harness->addWrappedData('<tpl:output value="{$x}" />');
 }
 
 function test_tags_output_002($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{$x}" as="raw" />');
+	$harness->addWrappedData('<tpl:output value="{$x}" escape="false" />');
 }
 
 function test_tags_output_003($harness)
 {
 	$harness->addDataForOverlay();
-	$harness->addWrappedOverlay('<tpl:output value="{$x}" as="html" />');
+	$harness->addWrappedOverlay('<tpl:output value="{$x}" />');
 }
 
 function test_tags_output_004($harness)
 {
 	$harness->addDataForOverlay();
-	$harness->addWrappedOverlay('<tpl:output value="{$x}" as="raw" />');
+	$harness->addWrappedOverlay('<tpl:output value="{$x}" escape="false" />');
 }
 
 function test_tags_output_005($harness)
 {
 	$harness->expectFailure(1, 'expression_invalid_meta');
-	$harness->addWrappedData('<tpl:output value="bad syn tax" as="raw" />');
+	$harness->addWrappedData('<tpl:output value="bad syn tax" escape="false" />');
 }
 
 function test_tags_output_006($harness)
 {
-	$harness->addWrappedData('<tpl:output value="{$x} + 1" as="raw" />');
+	$harness->addWrappedData('<tpl:output value="{$x} + 1" escape="false" />');
 }
 
 function test_tags_output_007($harness)
 {
-	$harness->expectFailure(1, 'tpl_output_invalid_as');
-	$harness->addWrappedData('<tpl:output value="{$x} + 1" as="invalid_as" />');
+	$harness->addWrappedData('<tpl:output value="{$x}" />');
 }
 
-function test_tags_raw_001($harness)
-{
-	$harness->addWrappedData('<tpl:raw value="{$x}" />');
-}
-
-function test_tags_raw_002($harness)
+function test_tags_output_008($harness)
 {
 	$harness->addDataForOverlay();
-	$harness->addWrappedOverlay('<tpl:raw value="{$x}" />');
+	$harness->addWrappedOverlay('<tpl:output value="{$x}" />');
 }
 
-function test_tags_raw_003($harness)
+function test_tags_output_009($harness)
 {
 	$harness->expectFailure(1, 'expression_invalid_meta');
-	$harness->addWrappedData('<tpl:raw value="bad syn tax" />');
+	$harness->addWrappedData('<tpl:output value="bad syn tax" />');
 }
 
-function test_tags_raw_004($harness)
+function test_tags_output_010($harness)
 {
-	$harness->addWrappedData('<tpl:raw value="{$x} + 1" />');
+	$harness->addWrappedData('<tpl:output value="{$x} + 1" />');
+}
+
+function test_tags_output_011($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{$x %json}" />');
+}
+
+function test_tags_output_012($harness)
+{
+	$harness->addDataForOverlay();
+	$harness->addWrappedOverlay('<tpl:output value="{$x %json}" />');
+}
+
+function test_tags_output_013($harness)
+{
+	$harness->addWrappedData('<tpl:output value="{$x %add:1 %json}" />');
 }
 
 function test_tags_for_001($harness)
@@ -235,56 +245,6 @@ function test_tags_set_009($harness)
 {
 	$harness->addDataForOverlay();
 	$harness->addWrappedOverlay('<tpl:set var="{$x}" value="1" />');
-}
-
-function test_tags_json_001($harness)
-{
-	$harness->addWrappedData('<tpl:json value="{$x}" as="html" />');
-}
-
-function test_tags_json_002($harness)
-{
-	$harness->addWrappedData('<tpl:json value="{$x}" as="raw" />');
-}
-
-function test_tags_json_003($harness)
-{
-	$harness->addDataForOverlay();
-	$harness->addWrappedOverlay('<tpl:json value="{$x}" as="html" />');
-}
-
-function test_tags_json_004($harness)
-{
-	$harness->addDataForOverlay();
-	$harness->addWrappedOverlay('<tpl:json value="{$x}" as="raw" />');
-}
-
-function test_tags_json_005($harness)
-{
-	$harness->expectFailure(1, 'expression_invalid_meta');
-	$harness->addWrappedData('<tpl:json value="bad syn tax" as="raw" />');
-}
-
-function test_tags_json_006($harness)
-{
-	$harness->addWrappedData('<tpl:json value="{$x} + 1" as="raw" />');
-}
-
-function test_tags_json_007($harness)
-{
-	$harness->expectFailure(1, 'tpl_output_invalid_as');
-	$harness->addWrappedData('<tpl:json value="{$x} + 1" as="invalid_as" />');
-}
-
-function test_tags_json_008($harness)
-{
-	$harness->expectOutput(json_encode(array('test' => 'test&test')));
-	$harness->addWrappedData('<tpl:json value="array(\'test\' => \'test&test\')" as="raw" skip-value-encode="true" />');
-}
-function test_tags_json_009($harness)
-{
-	$harness->expectOutput(json_encode(array('test' => htmlspecialchars('test&test'))));
-	$harness->addWrappedData('<tpl:json value="array(\'test\' => \'test&test\')" as="raw" skip-value-encode="false" />');
 }
 
 function test_tags_default_001($harness)

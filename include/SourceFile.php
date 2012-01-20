@@ -1,6 +1,8 @@
 <?php
 
-class ToxgSourceFile extends ToxgSource
+namespace ToxG;
+
+class SourceFile extends Source
 {
 	// Caching will eat plenty of memory, so it may really help things.
 	const ENABLE_CACHE = false;
@@ -9,7 +11,7 @@ class ToxgSourceFile extends ToxgSource
 	public function __construct($file, $line = 1)
 	{
 		if (!file_exists($file) || !is_readable($file))
-			throw new ToxgExceptionFile($file, 0, 'parsing_cannot_open');
+			throw new ExceptionFile($file, 0, 'parsing_cannot_open');
 
 		// If it's cached, this will return an array we will operate on.
 		$data = self::cacheForFile($file);
@@ -17,7 +19,7 @@ class ToxgSourceFile extends ToxgSource
 		{
 			$data = @fopen($file, 'rt');
 			if (!$data)
-				throw new ToxgExceptionFile($file, 0, 'parsing_cannot_open');
+				throw new ExceptionFile($file, 0, 'parsing_cannot_open');
 		}
 
 		parent::__construct($data, $file, $line);
@@ -52,11 +54,9 @@ class ToxgSourceFile extends ToxgSource
 			return false;
 	}
 
-	static function cacheAddToken($file, ToxgToken $token)
+	static function cacheAddToken($file, Token $token)
 	{
 		if (self::ENABLE_CACHE)
 			self::$cached_tokens[$file][] = $token;
 	}
 }
-
-?>

@@ -10,30 +10,30 @@ $context = array(
 	'site_name' => 'Testing',
 );
 
-$templates = new ToxgTemplateList();
-$templates->setNamespaces(array('site' => $nsuri, 'tpl' => ToxgTemplate::TPL_NAMESPACE));
+$templates = new Toxg\TemplateList();
+$templates->setNamespaces(array('site' => $nsuri, 'tpl' => Toxg\Template::TPL_NAMESPACE));
 
 // 1. TOX-G uses a flexible interface for you to provide it template data (choose one.)
 
 // 1.1. Just use a string (filename is used in error messages.)
-$template = new ToxgSource(get_template_data(), 'db:some-name-for-debugging');
+$template = new Toxg\Source(get_template_data(), 'db:some-name-for-debugging');
 
 // 1.2. Use a stream (must be seekable.)
 //$fp = fopen('php://memory', 'wt+');
 //fwrite($fp, get_template_data());
 //rewind($fp);
 //
-//$template = new ToxgSource($fp, 'db:some-name-for-debugging');
+//$template = new Toxg\Source($fp, 'db:some-name-for-debugging');
 
-// 1.3. Use a filename through ToxgSourceFile (or a subclass.)
+// 1.3. Use a filename through Toxg\SourceFile (or a subclass.)
 //file_put_contents(dirname(__FILE__) . '/.toxg.templates.tox', get_template_data());
-//$template = new ToxgSourceFile(dirname(__FILE__) . '/.toxg.templates.tox');
+//$template = new Toxg\SourceFile(dirname(__FILE__) . '/.toxg.templates.tox');
 
 // 1.4. Use a filename directly.
 //file_put_contents(dirname(__FILE__) . '/.toxg.templates.tox', get_template_data());
 //$template = dirname(__FILE__) . '/.toxg.templates.tox';
 
-// 1.5. Implement your own subclass of ToxgSource
+// 1.5. Implement your own subclass of Toxg\Source
 //$template = new MySource(12345);
 
 // 2. You can also do a few things with the compiled cache file (choose one.)
@@ -51,7 +51,7 @@ $compiled = fopen('php://memory', 'wt+');
 $templates->addTemplate($template, $compiled);
 
 // For simplicity, we're compiling every time.
-ToxgStandardElements::useIn($templates);
+Toxg\StandardElements::useIn($templates);
 $templates->compileAll();
 
 if (!is_resource($compiled))
@@ -63,9 +63,9 @@ else
 	eval('?>' . stream_get_contents($compiled));
 }
 
-ToxgTemplate::callTemplate($nsuri, 'main', array('context' => $context), 'above');
-ToxgTemplate::callTemplate($nsuri, 'home', array('context' => $context), 'both');
-ToxgTemplate::callTemplate($nsuri, 'main', array('context' => $context), 'below');
+Toxg\Template::callTemplate($nsuri, 'main', array('context' => $context), 'above');
+Toxg\Template::callTemplate($nsuri, 'home', array('context' => $context), 'both');
+Toxg\Template::callTemplate($nsuri, 'main', array('context' => $context), 'below');
 
 function get_template_data()
 {

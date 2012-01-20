@@ -38,14 +38,14 @@ class ToxgTestList
 		try
 		{
 			$harness = new ToxgTestHarness();
-			ToxgStandardElements::useIn($harness);
-			$harness->setNamespaces(array('tpl' => ToxgTemplate::TPL_NAMESPACE, 'my' => 'dummy' . $func));
+			Toxg\StandardElements::useIn($harness);
+			$harness->setNamespaces(array('tpl' => Toxg\Template::TPL_NAMESPACE, 'my' => 'dummy' . $func));
 			$func($harness);
 			$harness->compile('dummy' . $func);
 
 			$failure = $harness->isFailure();
 		}
-		catch (ToxgException $e)
+		catch (Toxg\Exception $e)
 		{
 			$failure = $harness->isExceptionFailure($e);
 		}
@@ -67,9 +67,10 @@ class ToxgTestList
 		$path_slash = $path == '' ? '' : $path . '/';
 
 		$dir = dir($full);
+
 		while ($entry = $dir->read())
 		{
-			if ($entry[0] === '.' || $path . $entry === 'index.php' || $path . $entry === 'include')
+			if ($entry[0] === '.' || $path . $entry === 'index.php' || $path . $entry === 'include' || end(explode('.', $entry)) !== 'php')
 				continue;
 			elseif (is_dir($full . '/' . $entry))
 				$this->getTestFiles($path_slash . $entry, $full_prefix);
@@ -77,8 +78,7 @@ class ToxgTestList
 				$this->files[] = $full . '/' . $entry;
 			
 		}
+
 		$dir->close();
 	}
 }
-
-?>

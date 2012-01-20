@@ -208,22 +208,14 @@ tpl:output
 
 	Requires a "value" attribute (specifying the variable or equation.)
 
-	The "as" attribute is used to define escaping, and can either be "html" or
-	"raw".  It is optional, and the default is described in the CDATA section
-	above.
+	The "escape" attribute is used to stop ToxG from using htmlspecialchars on
+	the value. It is optional, and it defaults to "true". Use "false" to prevent
+	escaping.
 
 	{$var}
 	<tpl:output value="{$var}" />
-	<tpl:output value="{$var} * 2" as="html" />
-	<tpl:output value="{$var} * 2" as="raw" />
-
-tpl:raw
-................................................................................
-	Equivalent to using tpl:output with an "as" attribute of "raw".  See above.
-
-	!!! May be removed.
-
-	<tpl:raw value="{$var}" />
+	<tpl:output value="{$var} * 2" />
+	<tpl:output value="{$var} * 2" escape="false" />
 
 tpl:json
 ................................................................................
@@ -234,23 +226,12 @@ tpl:json
 
 	Requires a "value" attribute (specifying the variable or equation.)
 
-	The "as" attribute is used to define escaping, and can either be "html" or
-	"raw".  It is optional, and the default is described in the CDATA section
-	above.
+	The "escape" attribute is used to stop ToxG from using htmlspecialchars on
+	the value. It is optional, and it defaults to "true". Use "false" to prevent
+	escaping.
 
 	<tpl:json value="{$var}" />
 	<tpl:json value="{$var} * 2" as="html" />
-
-tpl:format
-................................................................................
-	Not yet implemented.  Will be used for formatting dates, numbers, currency,
-	and other content.
-
-	Can be used inside templates and alterations (anywhere content can be.)
-
-	Attributes have not yet been defined.
-
-	!!! May be removed.
 
 tpl:foreach
 ................................................................................
@@ -289,11 +270,11 @@ tpl:for
 
 tpl:if
 ................................................................................
-	Used to do something only sometimes ("if" something is true.)
+	Used to do something only sometimes ("if" something is true).
 
 	Can be used inside templates and alterations (anywhere content can be.)
 
-	Requires a "test" attribute, which is the equation to check.  See the
+	Requires a "test" attribute, which is the equation to check. See the
 	separate "expressions" documentation for more information about this.
 
 	<tpl:if test="{$animal.is_mammal}">
@@ -312,7 +293,7 @@ tpl:else
 	Can be used inside templates and alterations (anywhere content can be.)
 
 	To specify another condition, use a "test" attribute, which is the equation
-	to check.  See the separate "expressions" documentation for more information
+	to check. See the separate "expressions" documentation for more information
 	about this.
 
 	<tpl:if test="{$animal.is_mammal}">
@@ -325,8 +306,8 @@ tpl:else
 
 tpl:flush
 ................................................................................
-	Used to forcibly send output to the browser.  Should be used VERY sparingly.
-	Most often, this might be used immediately after the </head> element.  It
+	Used to forcibly send output to the browser. Should be used VERY sparingly.
+	Most often, this might be used immediately after the </head> element. It
 	might also be used in a very long list of data to make sure the user sees
 	it more quickly.
 
@@ -338,8 +319,8 @@ tpl:flush
 
 tpl:set
 ................................................................................
-	Set a variable manually (e.g. for later use.)  This shouldn't be very
-	commonly used.  Equations can be used.
+	Set a variable manually (e.g. for later use). This shouldn't be very
+	commonly used. Equations can be used.
 
 	Can be used inside templates and alterations (anywhere content can be.)
 
@@ -353,14 +334,14 @@ tpl:set
 tpl:default
 ................................................................................
 	Used to output a default value when a variable or language string has no
-	content.  Always escaped as HTML (use an if otherwise.)
+	content. Always escaped as HTML (use an if otherwise.)
 
 	Can be used inside templates and alterations (anywhere content can be.)
 
 	Requires a "var" attribute (specifying the variable.)
 
 	Optionally uses a "default" attribute which specifies the variable or
-	string to use alternatively.  If not specified, a blank string is used.
+	string to use alternatively. If not specified, a blank string is used.
 
 	<tpl:default var="{$page_name}" default="{#page_name_home}" />
 
@@ -371,11 +352,11 @@ tpl:element
 
 	Can be used inside templates and alterations (anywhere content can be.)
 
-	Requires a "tpl:name" attribute.  Note that this attribute is in the tpl
-	namespace.  If you use "name", it will be added to the outputted element.
+	Requires a "tpl:name" attribute. Note that this attribute is in the tpl
+	namespace. If you use "name", it will be added to the outputted element.
 
 	Optionally uses a "tpl:inherit" attribute which means "inherit attributes
-	this template was used with."  If you use "*" or "class", and your template
+	this template was used with." If you use "*" or "class", and your template
 	was called with a class attribute, that attribute will be added.
 
 	Any other attributes are passed along, unless you override them.
@@ -384,7 +365,7 @@ tpl:element
 
 template-push
 ................................................................................
-	Used internally when making a template call.  Saves variables in a stack.
+	Used internally when making a template call. Saves variables in a stack.
 
 	Can be used inside templates and alterations (anywhere content can be.)
 
@@ -394,7 +375,7 @@ template-push
 
 template-pop
 ................................................................................
-	Used internally when making a template call.  Brings the old variables back.
+	Used internally when making a template call. Brings the old variables back.
 
 	Can be used inside templates and alterations (anywhere content can be.)
 

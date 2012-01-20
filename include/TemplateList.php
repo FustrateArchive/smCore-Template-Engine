@@ -1,6 +1,8 @@
 <?php
 
-class ToxgTemplateList
+namespace ToxG;
+
+class TemplateList
 {
 	protected $builder = null;
 	protected $prebuilder = null;
@@ -41,22 +43,22 @@ class ToxgTemplateList
 		$this->common_vars = $names;
 	}
 
-	public function disableDebugging($disable = true)
+	public function setDebugging($enabled = true)
 	{
-		$this->debugging = !$disable;
+		$this->debugging = (boolean) $enabled;
 	}
 
 	public function listenEmit($nsuri, $name, $callback)
 	{
 		if ($this->builder === null)
-			$this->builder = new ToxgBuilder();
+			$this->builder = new Builder();
 
 		$this->builder->listenEmit($nsuri, $name, $callback);
 	}
 
 	public function listenEmitBasic($name, $callback)
 	{
-		return $this->listenEmit(ToxgTemplate::TPL_NAMESPACE, $name, $callback);
+		return $this->listenEmit(Template::TPL_NAMESPACE, $name, $callback);
 	}
 
 	public function addTemplate($source_file, $cache_file, array $inherited_files = array())
@@ -79,7 +81,7 @@ class ToxgTemplateList
 		$object->addOverlays($this->overlays);
 		$object->setNamespaces($this->namespaces);
 		$object->setCommonVars($this->common_vars);
-		$object->disableDebugging(!$this->debugging);
+		$object->setDebugging($this->debugging);
 		$object->setPrebuilder($this->prebuilder);
 
 		return $object;
@@ -87,15 +89,15 @@ class ToxgTemplateList
 
 	protected function createTemplate($source_file)
 	{
-		return new ToxgTemplate($source_file, $this->builder);
+		return new Template($source_file, $this->builder);
 	}
 
 	public function compileAll()
 	{
 		if ($this->builder === null)
-			$this->builder = new ToxgBuilder();
+			$this->builder = new Builder();
 		if ($this->prebuilder === null)
-			$this->prebuilder = new ToxgPrebuilder();
+			$this->prebuilder = new Prebuilder();
 
 		$templates = array();
 		foreach ($this->templates as $k => $template)
@@ -120,5 +122,3 @@ class ToxgTemplateList
 			include($template['cache_file']);
 	}
 }
-
-?>

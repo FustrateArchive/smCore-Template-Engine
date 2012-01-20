@@ -1,6 +1,6 @@
 <?php
 
-class ToxgTestHarness extends ToxgTemplate
+class ToxgTestHarness extends Toxg\Template
 {
 	static $test = 'pass_var';
 	static $to_escape = '& < > "';
@@ -20,7 +20,7 @@ class ToxgTestHarness extends ToxgTemplate
 		$this->source_files = array();
 
 		// Don't let previous mappings confuse us.
-		ToxgErrors::reset();
+		Toxg\Errors::reset();
 	}
 
 	public function setOutputParams(array $output_params)
@@ -30,7 +30,7 @@ class ToxgTestHarness extends ToxgTemplate
 
 	public function addData($data)
 	{
-		$this->source_files[] = new ToxgSource($data, 'unit-test-file');
+		$this->source_files[] = new Toxg\Source($data, 'unit-test-file');
 	}
 
 	public function addWrappedData($data)
@@ -45,7 +45,7 @@ class ToxgTestHarness extends ToxgTemplate
 
 	public function addOverlay($data)
 	{
-		$this->overlays[] = new ToxgOverlay(new ToxgSource($data, 'unit-test-overlay'));
+		$this->overlays[] = new Toxg\Overlay(new Toxg\Source($data, 'unit-test-overlay'));
 	}
 
 	public function addWrappedOverlay($data)
@@ -149,14 +149,14 @@ class ToxgTestHarness extends ToxgTemplate
 		{
 			foreach ($this->layers as $layer)
 			{
-				$func_prefix = ToxgExpression::makeTemplateName($my_ns, $layer);
+				$func_prefix = Toxg\Expression::makeTemplateName($my_ns, $layer);
 				call_user_func_array($func_prefix . '_above', array(&$this->output_params));
 			}
 
 			$rev = array_reverse($this->layers);
 			foreach ($rev as $layer)
 			{
-				$func_prefix = ToxgExpression::makeTemplateName($my_ns, $layer);
+				$func_prefix = Toxg\Expression::makeTemplateName($my_ns, $layer);
 				call_user_func_array($func_prefix . '_below', array(&$this->output_params));
 			}
 
@@ -188,5 +188,3 @@ class ToxgTestHarness extends ToxgTemplate
 			@unlink($cache_file);
 	}
 }
-
-?>

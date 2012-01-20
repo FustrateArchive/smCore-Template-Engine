@@ -3,17 +3,17 @@
 require(dirname(dirname(__FILE__)) . '/include.php');
 
 // The default is simply "lang".
-ToxgExpression::setLangFunction('my_lang_formatter');
+Toxg\Expression::setLangFunction('my_lang_formatter');
 
 $theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__));
 $theme->loadTemplates('templates');
 $theme->addLayer('main');
 
 $theme->addTemplate('home');
-$theme->context['page_name'] = my_lang_formatter('page_name_home');
+$theme->context['page_name'] = my_lang_formatter(array('page_name_home'));
 $theme->output();
 
-function my_lang_formatter()
+function my_lang_formatter($key, $params = array())
 {
 	// This could use gettext, or logic based on the number of parameters.
 	// It could also use a different string based on numeric parameters.
@@ -23,15 +23,12 @@ function my_lang_formatter()
 		'page_name_home' => 'Home',
 	);
 
-	$args = func_get_args();
-	$id = array_shift($args);
-
-	if (!isset($strings[$id]))
+	if (!isset($strings[$key[0]]))
 		$string = '(unknown translation)';
 	else
-		$string = $strings[$id];
+		$string = $strings[$key[0]];
 
-	return vsprintf($string, $args);
+	return vsprintf($string, $params);
 }
 
 ?>

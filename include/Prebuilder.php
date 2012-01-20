@@ -1,6 +1,8 @@
 <?php
 
-class ToxgPrebuilder
+namespace ToxG;
+
+class Prebuilder
 {
 	protected $templates = array();
 	protected $template_usage = array();
@@ -58,18 +60,18 @@ class ToxgPrebuilder
 		$this->current_template = $template_id;
 	}
 
-	public function setupParser(ToxgParser $parser)
+	public function setupParser(Parser $parser)
 	{
 		$parser->listen('parsedContent', array($this, 'parsedContent'));
 		$parser->listen('parsedElement', array($this, 'parsedElement'));
 	}
 
-	public function setupOverlayParser(ToxgParser $parser)
+	public function setupOverlayParser(Parser $parser)
 	{
 		$this->getCurrentOverlay()->setupParser($parser);
 	}
 
-	public function parsedContent(ToxgToken $token, ToxgParser $parser)
+	public function parsedContent(Token $token, Parser $parser)
 	{
 		if ($this->parse_state === 'alter')
 			$this->handleAlterToken($token);
@@ -77,14 +79,14 @@ class ToxgPrebuilder
 			$this->requireTemplate($token);
 	}
 
-	public function parsedElement(ToxgToken $token, ToxgParser $parser)
+	public function parsedElement(Token $token, Parser $parser)
 	{
 		if ($this->parse_state === 'alter')
 		{
 			$this->handleAlterToken($token);
 			$this->trackUsage($token);
 		}
-		elseif ($token->nsuri === ToxgTemplate::TPL_NAMESPACE)
+		elseif ($token->nsuri === Template::TPL_NAMESPACE)
 		{
 			if ($token->name === 'template')
 				$this->handleTagTemplate($token);
@@ -104,7 +106,7 @@ class ToxgPrebuilder
 		}
 	}
 
-	protected function trackUsage(ToxgToken $token)
+	protected function trackUsage(Token $token)
 	{
 		// We won't count auto-tokens because they're for direct calls.
 		// !!! Better way?
@@ -112,7 +114,7 @@ class ToxgPrebuilder
 			$this->template_usage[$token->nsuri][$token->name] = true;
 	}
 
-	protected function handleTagTemplate(ToxgToken $token)
+	protected function handleTagTemplate(Token $token)
 	{
 		// We only care about start tags.
 		if ($token->type === 'tag-start')
@@ -141,7 +143,7 @@ class ToxgPrebuilder
 					$requires = array_filter(array_map('trim', preg_split('~[\s,]+~', $token->attributes['requires'])));
 
 					foreach ($requires as $required)
-						$this->templates[$name]['requires'][] = ToxgExpression::makeVarName($required);
+						$this->templates[$name]['requires'][] = Expression::makeVarName($required);
 				}
 			}
 
@@ -151,7 +153,7 @@ class ToxgPrebuilder
 			$this->parse_state = 'outside';
 	}
 
-	protected function handleTagAlter(ToxgToken $token)
+	protected function handleTagAlter(Token $token)
 	{
 		// Start tags are where the action happens.
 		if ($token->type === 'tag-start')
@@ -168,7 +170,7 @@ class ToxgPrebuilder
 			$this->parse_state = 'outside';
 	}
 
-	protected function requireTemplate(ToxgToken $token)
+	protected function requireTemplate(Token $token)
 	{
 		if ($this->parse_state !== 'template')
 		{
@@ -180,7 +182,7 @@ class ToxgPrebuilder
 		}
 	}
 
-	protected function handleAlterToken(ToxgToken $token)
+	protected function handleAlterToken(Token $token)
 	{
 		if (!$this->getCurrentOverlay()->parseToken($token))
 			$this->parse_state = 'outside';
@@ -190,7 +192,7 @@ class ToxgPrebuilder
 	{
 		$overlay = &$this->overlays[$this->current_template];
 		if (!isset($overlay))
-			$overlay = new ToxgOverlay(null);
+			$overlay = new Overlay(null);
 
 		return $overlay;
 	}
@@ -210,7 +212,6 @@ class ToxgPrebuilder
 			$name = $token->name;
 		}
 
-		return ToxgExpression::makeTemplateName($nsuri, $name);
+		return Expression::makeTemplateName($nsuri, $name);
 	}
 }
-?>

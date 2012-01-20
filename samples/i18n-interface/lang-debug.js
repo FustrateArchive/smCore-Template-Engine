@@ -12,7 +12,7 @@ jQuery(function ()
 		var element = jQuery(this);
 
 		var id = element.attr("data-lang");
-		var params = element.attr("data-lang-params") - 1;
+		var params = element.attr("data-lang-params");
 
 		// This is a simple example.  Really, we want to handle the escaping of &, etc. better.
 		var existing = element.html();

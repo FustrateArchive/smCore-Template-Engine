@@ -1,6 +1,8 @@
 <?php
 
-class ToxgExceptionFile extends ToxgException
+namespace ToxG;
+
+class ExceptionFile extends Exception
 {
 	public function __construct($file, $line, $id_message)
 	{
@@ -13,5 +15,3 @@ class ToxgExceptionFile extends ToxgException
 		parent::__construct($id_message, $params);
 	}
 }
-
-?>

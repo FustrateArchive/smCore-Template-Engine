@@ -21,45 +21,45 @@ class MyTheme extends SampleToxgTheme
 		// We're going to replace the default implementation.
 		if ($this->lang_debugging)
 		{
-			$this->templates->listenEmit(ToxgTemplate::TPL_NAMESPACE, 'output', array($this, 'tpl_output'));
-			ToxgExpression::setLangFunction('MyTheme::debuggingLangString');
+			$this->templates->listenEmit(Toxg\Template::TPL_NAMESPACE, 'output', array($this, 'tpl_output'));
+			Toxg\Expression::setLangFunction('MyTheme::debuggingLangString');
 		}
 		else
-			ToxgExpression::setLangFunction('my_lang_formatter');
+			Toxg\Expression::setLangFunction('my_lang_formatter');
 	}
 
-	public function tpl_output(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	public function tpl_output(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
 	{
 		$this->requireEmpty($token);
-		$this->requireAttributes(array('value', 'as'), $token);
+		$this->requireAttributes(array('value'), $token);
+
+		$escape = empty($attributes['escape']) || $attributes['escape'] !== 'false';
 
 		$expr = $builder->parseExpression('normal', $attributes['value'], $token);
 		$debug = isset($attributes['debug']) && $attributes['debug'] === 'false' ? 'false' : 'true';
 
-		if ($attributes['as'] === 'html')
+		if ($escape)
 			$builder->emitOutputParam(__CLASS__ . '::escapeDebuggingHTML(' . $expr . ', ' . $debug . ')', $token);
-		elseif ($attributes['as'] === 'raw')
-			$builder->emitOutputParam('(' . $expr . ')', $token);
 		else
-			$token->toss('tpl_output_invalid_as');
+			$builder->emitOutputParam('(' . $expr . ')', $token);
 
 		// False means: don't process any other events for this.
 		return false;
 	}
 
-	protected function requireEmpty(ToxgToken $token)
+	protected function requireEmpty(Toxg\Token $token)
 	{
 		if ($token->type !== 'tag-empty')
 			$token->toss('generic_tpl_must_be_empty', $token->prettyName());
 	}
 
-	protected function requireNotEmpty(ToxgToken $token)
+	protected function requireNotEmpty(Toxg\Token $token)
 	{
 		if ($token->type === 'tag-empty')
 			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());
 	}
 
-	protected function requireAttributes(array $reqs, ToxgToken $token)
+	protected function requireAttributes(array $reqs, Toxg\Token $token)
 	{
 		if ($token->type === 'tag-end')
 			return;
@@ -89,18 +89,16 @@ class MyTheme extends SampleToxgTheme
 			return preg_replace(array_keys($replacements), array_pad(array(), count($replacements), ''), $string);
 	}
 
-	static function debuggingLangString()
+	static function debuggingLangString($key, $params = array())
 	{
-		$args = func_get_args();
+		// This is kinda a cheap way to format it so we can find it later.
+		foreach ($params as $id => $param)
+			$params[$id] = '<<<langparam>>>' . $param . '<<</langparam>>>';
+
+		$text = call_user_func('my_lang_formatter', $key, $params);
 
 		// This is kinda a cheap way to format it so we can find it later.
-		for ($i = 1; $i < count($args); $i++)
-			$args[$i] = '<<<langparam>>>' . $args[$i] . '<<</langparam>>>';
-
-		$text = call_user_func_array('my_lang_formatter', $args);
-
-		// This is kinda a cheap way to format it so we can find it later.
-		return '<<<lang:' . $args[0] . ':' . count($args) . '>>>' . $text . '<<</lang>>>';
+		return '<<<lang:' . $key[0] . ':' . count($params) . '>>>' . $text . '<<</lang>>>';
 	}
 }
 

@@ -18,7 +18,7 @@ class MyTheme extends SampleToxgTheme
 		$this->templates->listenEmitBasic('not-last', array($this, 'tpl_not_last'));
 	}
 
-	public function hookDynamic(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	public function hookDynamic(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
 	{
 		list ($ns, $name) = explode(':', $attributes['name'], 2);
 		$nsuri = $token->getNamespace($ns);
@@ -38,9 +38,9 @@ class MyTheme extends SampleToxgTheme
 		return '__toxg_foreach_left_' . $key;
 	}
 
-	public function tpl_foreach(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	public function tpl_foreach(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
 	{
-		// No from?  Assume ToxgStandardElements will handle the error?
+		// No from?  Assume Toxg\StandardElements will handle the error?
 		if (isset($attributes['from']))
 		{
 			$from = $builder->parseExpression('normal', $attributes['from'], $token);
@@ -88,7 +88,7 @@ class MyTheme extends SampleToxgTheme
 		}
 	}
 
-	public function tpl_not_last(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
+	public function tpl_not_last(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
 	{
 		if ($token->type === 'tag-empty')
 			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());

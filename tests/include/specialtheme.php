@@ -18,24 +18,24 @@ class ToxgTestTheme
 	{
 		$this->nsuri .= ':' . self::$id++;
 
-		$this->templates = new ToxgTemplateList();
-		$this->templates->setNamespaces(array('site' => $this->nsuri, 'tpl' => ToxgTemplate::TPL_NAMESPACE));
+		$this->templates = new Toxg\TemplateList();
+		$this->templates->setNamespaces(array('site' => $this->nsuri, 'tpl' => Toxg\Template::TPL_NAMESPACE));
 		$this->templates->setCommonVars(array('context'));
 	}
 
 	public function loadOverlay($string, $name)
 	{
-		$source = new ToxgSource($string, $name);
+		$source = new Toxg\Source($string, $name);
 		$this->templates->addOverlays(array($source));
 	}
 
 	public function loadTemplates($string, $name, $inherited = array())
 	{
-		$source = new ToxgSource($string, $name);
+		$source = new Toxg\Source($string, $name);
 
 		$inherited_sources = array();
 		foreach ($inherited as $sub_name => $string)
-			$inherited_sources[] = new ToxgSource($string, $name . $sub_name);
+			$inherited_sources[] = new Toxg\Source($string, $name . $sub_name);
 
 		$this->loadTemplatesSource($source, $name, $inherited_sources);
 	}
@@ -138,7 +138,7 @@ class ToxgTestTheme
 
 	public function compile()
 	{
-		ToxgStandardElements::useIn($this->templates);
+		Toxg\StandardElements::useIn($this->templates);
 		$this->templates->compileAll();
 		$this->templates->loadAll();
 
@@ -149,12 +149,12 @@ class ToxgTestTheme
 
 	public function isTemplateUsed($name)
 	{
-		return ToxgTemplate::isTemplateUsed($this->nsuri, $name);
+		return Toxg\Template::isTemplateUsed($this->nsuri, $name);
 	}
 
 	protected function callTemplate($name, $side)
 	{
-		ToxgTemplate::callTemplate($this->nsuri, $name, array('context' => $this->context), $side);
+		Toxg\Template::callTemplate($this->nsuri, $name, array('context' => $this->context), $side);
 	}
 }
 

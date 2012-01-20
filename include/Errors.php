@@ -1,6 +1,8 @@
 <?php
 
-class ToxgErrors
+namespace ToxG;
+
+class Errors
 {
 	protected static $prior = null;
 	protected static $retain = 0;
@@ -111,5 +113,3 @@ class ToxgErrors
 		return true;
 	}
 }
-
-?>

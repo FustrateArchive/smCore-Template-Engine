@@ -1,6 +1,6 @@
 <?php
 
-class MySource extends ToxgSource
+class MySource extends Toxg\Source
 {
 	public function __construct($id)
 	{

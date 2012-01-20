@@ -30,12 +30,9 @@ function my_lang_string($id)
 		return $strings[$id];
 }
 
-function my_lang_formatter()
+function my_lang_formatter($key, $params = array())
 {
-	$args = func_get_args();
-	$id = array_shift($args);
-
-	return vsprintf(my_lang_string($id), $args);
+	return vsprintf(my_lang_string($key[0]), $params);
 }
 
 ?>

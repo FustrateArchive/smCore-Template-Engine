@@ -1,6 +1,8 @@
 <?php
 
-class ToxgException extends Exception
+namespace ToxG;
+
+class Exception extends \Exception
 {
 	protected static $messages = array(
 		// This is to simplify life for custom stuff.
@@ -8,14 +10,15 @@ class ToxgException extends Exception
 
 		// *** Template parsing:
 
-		'parsing_invalid_source_type' => 'The inserted source must be either a ToxgSource or ToxgToken.',
-		'parsing_element_incomplete' => 'Unclosed element %s started at %s, line %s.',
+		'parsing_invalid_source_type' => 'The inserted source must be either a Source or Token.',
+		'parsing_element_incomplete' => 'Unclosed element %1$s started at %2$s, line %3$s.',
 		'parsing_internal_error' => 'Internal parsing error.',
 		'parsing_content_outside_template' => 'Unexpected content outside any template definition.',
-		'parsing_unmatched_tags' => 'Expecting the close tag from %s in %s, line %s.',
+		'parsing_unmatched_tags' => 'Expecting the close tag from %1$s in %2$s, line %3$s.',
 		'parsing_tag_already_closed' => 'Unmatched element %s, you closed it already or never opened it.',
-		'parsing_tag_end_unmatched' => 'End tag for %s found instead of %s, started at %s, line %s.',
-		'template_missing_required' => 'Template %s is missing the following attributes: %s',
+		'parsing_tag_end_unmatched' => 'End tag for %1$s found instead of %2$s, started at %3$s, line %4$s.',
+		'template_missing_required' => 'Template %1$s is missing the following attributes: %2$s',
+		'template_not_found' => 'Unable to find template named %1$s in namespace %2$s',
 
 		// *** File handling:
 
@@ -68,8 +71,6 @@ class ToxgException extends Exception
 		'tpl_content_inside_invalid' => 'You cannot use tpl:content within tpl:if, tpl:foreach, etc.  It must be inside a tpl:template.',
 		'tpl_content_twice' => 'Only one tpl:content is allowed per template.',
 		'tpl_output_must_be_empty' => 'Please always use an empty tag like <tpl:output />, it cannot have content inside it.',
-		'tpl_output_invalid_as' => 'Invalid value for as attribute: expecting html or raw.',
-		'tpl_json_must_be_empty' => 'Please always use an empty tag like <tpl:json />, it cannot have content inside it.',
 		'tpl_for_no_params' => 'Any tpl:for element must use at least one parameter (init, while, modify).',
 		'tpl_foreach_invalid_from' => 'Cannot foreach over a string, you probably want a variable.',
 		'tpl_set_invalid_meta' => 'Invalid meta data for <tpl:set>. Either a value attribute or content can be used, not both.',
@@ -98,7 +99,6 @@ class ToxgException extends Exception
 		'expression_expected_var_only' => 'expecting only a variable reference.',
 		'expression_empty' => 'expected expression, found empty.',
 		'expression_incomplete' => 'incomplete expression.',
-		'expression_unknown_error' => 'unable to parse properly.',
 		'expression_braces_unmatched' => 'unmatched braces.',
 		'expression_brackets_unmatched' => 'unmatched square brackets in expression.',
 		'expression_expected_ref' => 'expecting reference like {$name} or {#name}.',
@@ -106,6 +106,11 @@ class ToxgException extends Exception
 		'expression_var_name_empty' => 'expecting a variable name, but just got {$}.',
 		'expression_lang_name_empty' => 'empty language reference.',
 		'expression_format_type_empty' => 'empty format type.',
+		'expression_validation_error' => 'could not be validated.',
+		'expression_empty_brackets' => 'empty square brackets.',
+		'expression_filter_no_name' => 'expected a filter name.',
+		'expression_unexpected_semicolon' => 'unexpected semicolon in variable reference.',
+		'expression_unknown_error' => 'unable to parse properly.',
 	);
 
 	public $tpl_file = null;
@@ -139,4 +144,3 @@ class ToxgException extends Exception
 			return vsprintf(self::$messages[$id_message], $params);
 	}
 }
-?>

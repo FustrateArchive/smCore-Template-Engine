@@ -2,25 +2,25 @@
 
 // Needed for execution (and compiling.)
 // For debugging.
-require(dirname(__FILE__) . '/toxgerrors.php');
+require(dirname(__FILE__) . '/Errors.php');
 // For makeTemplateName().
-require(dirname(__FILE__) . '/toxgexpression.php');
+require(dirname(__FILE__) . '/Expression.php');
 // For VERSION, callTemplate().
-require(dirname(__FILE__) . '/toxgtemplate.php');
+require(dirname(__FILE__) . '/Template.php');
 // For simple handling of many templates.
-require(dirname(__FILE__) . '/toxgtemplatelist.php');
+require(dirname(__FILE__) . '/TemplateList.php');
 
 // Needed for only compiling.
-require(dirname(__FILE__) . '/toxgexception.php');
-require(dirname(__FILE__) . '/toxgexceptionfile.php');
-require(dirname(__FILE__) . '/toxgsource.php');
-require(dirname(__FILE__) . '/toxgsourcefile.php');
-require(dirname(__FILE__) . '/toxgprebuilder.php');
-require(dirname(__FILE__) . '/toxgbuilder.php');
-require(dirname(__FILE__) . '/toxgoverlay.php');
-require(dirname(__FILE__) . '/toxgparser.php');
-require(dirname(__FILE__) . '/toxgtoken.php');
-require(dirname(__FILE__) . '/toxgstandardelements.php');
-require(dirname(__FILE__) . '/toxgtheme.php');
+require(dirname(__FILE__) . '/Exception.php');
+require(dirname(__FILE__) . '/ExceptionFile.php');
+require(dirname(__FILE__) . '/Source.php');
+require(dirname(__FILE__) . '/SourceFile.php');
+require(dirname(__FILE__) . '/Prebuilder.php');
+require(dirname(__FILE__) . '/Builder.php');
+require(dirname(__FILE__) . '/Overlay.php');
+require(dirname(__FILE__) . '/Parser.php');
+require(dirname(__FILE__) . '/Token.php');
+require(dirname(__FILE__) . '/StandardElements.php');
+require(dirname(__FILE__) . '/Theme.php');
 
 ?>
