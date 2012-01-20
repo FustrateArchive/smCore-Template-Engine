@@ -1,6 +1,6 @@
 <?php
 
-class MyTheme extends SampleToxgTheme
+class MyTheme extends SampleTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
 	protected $theme = null;
@@ -8,9 +8,9 @@ class MyTheme extends SampleToxgTheme
 	public function __construct($name)
 	{
 		$this->theme = $name;
-		$this->template_dir = dirname(__FILE__) . '/themes/' . $name;
-		$this->compile_dir = dirname(__FILE__) . '/themes/' . $name;
-		$this->inherited_dirs[] = $name === 'base' ? array() : (dirname(__FILE__) . '/themes/base');
+		$this->template_dir = __DIR__ . '/themes/' . $name;
+		$this->compile_dir = __DIR__ . '/themes/' . $name;
+		$this->inherited_dirs[] = $name === 'base' ? array() : (__DIR__ . '/themes/base');
 
 		parent::__construct($this->template_dir, $this->compile_dir, $this->inherited_dirs);
 
@@ -18,5 +18,3 @@ class MyTheme extends SampleToxgTheme
 			$this->loadOverlay('overlay');
 	}
 }
-
-?>

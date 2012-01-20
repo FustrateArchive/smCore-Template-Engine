@@ -1,6 +1,6 @@
 <?php
 
-class MySource extends Toxg\Source
+class MySource extends smCore\TemplateEngine\Source
 {
 	public function __construct($id)
 	{
@@ -41,5 +41,3 @@ class MySource extends Toxg\Source
 		return get_template_data();
 	}
 }
-
-?>

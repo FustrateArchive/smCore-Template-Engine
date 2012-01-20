@@ -1,6 +1,6 @@
 <?php
 
-class MyTheme extends SampleToxgTheme
+class MyTheme extends SampleTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
 
@@ -12,11 +12,11 @@ class MyTheme extends SampleToxgTheme
 
 	protected function setListeners()
 	{
-		// When compiling, ask TOX-G to tell us when it sees templates...
+		// When compiling, ask it to tell us when it sees templates...
 		$this->templates->listenEmitBasic('template', array($this, 'hookDynamic'));
 	}
 
-	public function hookDynamic(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
+	public function hookDynamic(smCore\TemplateEngine\Builder $builder, $type, array $attributes, smCore\TemplateEngine\Token $token)
 	{
 		list ($ns, $name) = explode(':', $attributes['name'], 2);
 		$nsuri = $token->getNamespace($ns);
@@ -41,5 +41,3 @@ class MyTheme extends SampleToxgTheme
 		);
 	}
 }
-
-?>

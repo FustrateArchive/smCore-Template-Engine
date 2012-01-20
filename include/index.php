@@ -2,25 +2,23 @@
 
 // Needed for execution (and compiling.)
 // For debugging.
-require(dirname(__FILE__) . '/Errors.php');
+require(__DIR__ . '/Errors.php');
 // For makeTemplateName().
-require(dirname(__FILE__) . '/Expression.php');
+require(__DIR__ . '/Expression.php');
 // For VERSION, callTemplate().
-require(dirname(__FILE__) . '/Template.php');
+require(__DIR__ . '/Template.php');
 // For simple handling of many templates.
-require(dirname(__FILE__) . '/TemplateList.php');
+require(__DIR__ . '/TemplateList.php');
 
 // Needed for only compiling.
-require(dirname(__FILE__) . '/Exception.php');
-require(dirname(__FILE__) . '/ExceptionFile.php');
-require(dirname(__FILE__) . '/Source.php');
-require(dirname(__FILE__) . '/SourceFile.php');
-require(dirname(__FILE__) . '/Prebuilder.php');
-require(dirname(__FILE__) . '/Builder.php');
-require(dirname(__FILE__) . '/Overlay.php');
-require(dirname(__FILE__) . '/Parser.php');
-require(dirname(__FILE__) . '/Token.php');
-require(dirname(__FILE__) . '/StandardElements.php');
-require(dirname(__FILE__) . '/Theme.php');
-
-?>
+require(__DIR__ . '/Exception.php');
+require(__DIR__ . '/ExceptionFile.php');
+require(__DIR__ . '/Source.php');
+require(__DIR__ . '/SourceFile.php');
+require(__DIR__ . '/Prebuilder.php');
+require(__DIR__ . '/Builder.php');
+require(__DIR__ . '/Overlay.php');
+require(__DIR__ . '/Parser.php');
+require(__DIR__ . '/Token.php');
+require(__DIR__ . '/StandardElements.php');
+require(__DIR__ . '/Theme.php');

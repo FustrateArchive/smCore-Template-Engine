@@ -1,6 +1,6 @@
 <?php
 
-class ToxgTestHarness extends Toxg\Template
+class ToxgTestHarness extends smCore\TemplateEngine\Template
 {
 	static $test = 'pass_var';
 	static $to_escape = '& < > "';
@@ -20,7 +20,7 @@ class ToxgTestHarness extends Toxg\Template
 		$this->source_files = array();
 
 		// Don't let previous mappings confuse us.
-		Toxg\Errors::reset();
+		smCore\TemplateEngine\Errors::reset();
 	}
 
 	public function setOutputParams(array $output_params)
@@ -30,7 +30,7 @@ class ToxgTestHarness extends Toxg\Template
 
 	public function addData($data)
 	{
-		$this->source_files[] = new Toxg\Source($data, 'unit-test-file');
+		$this->source_files[] = new smCore\TemplateEngine\Source($data, 'unit-test-file');
 	}
 
 	public function addWrappedData($data)
@@ -45,7 +45,7 @@ class ToxgTestHarness extends Toxg\Template
 
 	public function addOverlay($data)
 	{
-		$this->overlays[] = new Toxg\Overlay(new Toxg\Source($data, 'unit-test-overlay'));
+		$this->overlays[] = new smCore\TemplateEngine\Overlay(new smCore\TemplateEngine\Source($data, 'unit-test-overlay'));
 	}
 
 	public function addWrappedOverlay($data)
@@ -99,7 +99,7 @@ class ToxgTestHarness extends Toxg\Template
 
 	public function compile($my_ns)
 	{
-		$cache_file = dirname(dirname(__FILE__)) . '/.test.output';
+		$cache_file = dirname(__DIR__) . '/.test.output';
 
 		parent::compile($cache_file);
 
@@ -149,14 +149,14 @@ class ToxgTestHarness extends Toxg\Template
 		{
 			foreach ($this->layers as $layer)
 			{
-				$func_prefix = Toxg\Expression::makeTemplateName($my_ns, $layer);
+				$func_prefix = smCore\TemplateEngine\Expression::makeTemplateName($my_ns, $layer);
 				call_user_func_array($func_prefix . '_above', array(&$this->output_params));
 			}
 
 			$rev = array_reverse($this->layers);
 			foreach ($rev as $layer)
 			{
-				$func_prefix = Toxg\Expression::makeTemplateName($my_ns, $layer);
+				$func_prefix = smCore\TemplateEngine\Expression::makeTemplateName($my_ns, $layer);
 				call_user_func_array($func_prefix . '_below', array(&$this->output_params));
 			}
 
@@ -182,7 +182,7 @@ class ToxgTestHarness extends Toxg\Template
 
 	public function __destruct()
 	{
-		$cache_file = dirname(dirname(__FILE__)) . '/.test.output';
+		$cache_file = dirname(__DIR__) . '/.test.output';
 
 		if (file_exists($cache_file))
 			@unlink($cache_file);

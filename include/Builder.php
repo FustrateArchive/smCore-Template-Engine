@@ -1,6 +1,6 @@
 <?php
 
-namespace ToxG;
+namespace smCore\TemplateEngine;
 
 class Builder
 {
@@ -484,11 +484,11 @@ class Builder
 
 	protected function getErrorClassName()
 	{
-		return 'Toxg\Errors';
+		return 'smCore\TemplateEngine\Errors';
 	}
 
 	protected function getUsageClassName()
 	{
-		return 'Toxg\Template';
+		return 'smCore\TemplateEngine\Template';
 	}
 }

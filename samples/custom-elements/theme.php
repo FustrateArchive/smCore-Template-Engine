@@ -1,6 +1,6 @@
 <?php
 
-class MyTheme extends SampleToxgTheme
+class MyTheme extends SampleTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
 	protected $last_foreach_stack = array();
@@ -13,12 +13,12 @@ class MyTheme extends SampleToxgTheme
 
 	protected function setListeners()
 	{
-		// When compiling, ask TOX-G to tell us when it sees templates...
+		// When compiling, ask it to tell us when it sees templates...
 		$this->templates->listenEmitBasic('foreach', array($this, 'tpl_foreach'));
 		$this->templates->listenEmitBasic('not-last', array($this, 'tpl_not_last'));
 	}
 
-	public function hookDynamic(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
+	public function hookDynamic(smCore\TemplateEngine\Builder $builder, $type, array $attributes, smCore\TemplateEngine\Token $token)
 	{
 		list ($ns, $name) = explode(':', $attributes['name'], 2);
 		$nsuri = $token->getNamespace($ns);
@@ -38,9 +38,9 @@ class MyTheme extends SampleToxgTheme
 		return '__toxg_foreach_left_' . $key;
 	}
 
-	public function tpl_foreach(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
+	public function tpl_foreach(smCore\TemplateEngine\Builder $builder, $type, array $attributes, smCore\TemplateEngine\Token $token)
 	{
-		// No from?  Assume Toxg\StandardElements will handle the error?
+		// No from?  Assume smCore\TemplateEngine\StandardElements will handle the error?
 		if (isset($attributes['from']))
 		{
 			$from = $builder->parseExpression('normal', $attributes['from'], $token);
@@ -88,7 +88,7 @@ class MyTheme extends SampleToxgTheme
 		}
 	}
 
-	public function tpl_not_last(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
+	public function tpl_not_last(smCore\TemplateEngine\Builder $builder, $type, array $attributes, smCore\TemplateEngine\Token $token)
 	{
 		if ($token->type === 'tag-empty')
 			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());
@@ -105,5 +105,3 @@ class MyTheme extends SampleToxgTheme
 			$builder->emitCode('}');
 	}
 }
-
-?>

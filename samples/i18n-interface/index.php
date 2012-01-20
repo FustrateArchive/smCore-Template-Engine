@@ -1,9 +1,9 @@
 <?php
 
-require(dirname(dirname(__FILE__)) . '/include.php');
-require(dirname(__FILE__) . '/theme.php');
+require(dirname(__DIR__) . '/include.php');
+require(__DIR__ . '/theme.php');
 
-$theme = new MyTheme(dirname(__FILE__), dirname(__FILE__));
+$theme = new MyTheme(__DIR__, __DIR__);
 $theme->enableLangDebugging();
 $theme->loadTemplates('templates');
 $theme->addLayer('main');
@@ -34,5 +34,3 @@ function my_lang_formatter($key, $params = array())
 {
 	return vsprintf(my_lang_string($key[0]), $params);
 }
-
-?>

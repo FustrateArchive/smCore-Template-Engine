@@ -3,7 +3,7 @@ Templates
 
 Overview
 --------------------------------------------------------------------------------
-Templates are a basic design element in TOX-G.  They are used for many things,
+Templates are a basic design element in ToxG. They are used for many things,
 such as:
 
   - integration with the code (e.g. which templates are shown.)
@@ -15,7 +15,7 @@ such as:
 Integrating with the code
 --------------------------------------------------------------------------------
 On a basic level, the code will probably start off by loading a template, and
-having it produce the content of the page.  It might also use an "html" template
+having it produce the content of the page. It might also use an "html" template
 or one for the header/footer.
 
 It's also possible that using a template might trigger the code to do something.
@@ -23,7 +23,7 @@ It's also possible that using a template might trigger the code to do something.
 
 For convenience and ease
 --------------------------------------------------------------------------------
-Sometimes there's some HTML that you just have to write out a lot.  For example,
+Sometimes there's some HTML that you just have to write out a lot. For example,
 consider the case of rounded corners compatible with older browsers... you might
 find yourself writing:
 
@@ -64,12 +64,12 @@ Let's take for example, outputting an image button:
 	</tpl:template>
 
 See those {$name} and {$alt} parts?  They refer to the attributes you put on
-my:image-button.  Another very common use for this is passing along classes:
+my:image-button. Another very common use for this is passing along classes:
 
 	<div class="standard-class {$class}" />
 
 However, note that you'll get an error if you forget to (or don't need to) put
-a class on the template call.  In this case, you can use tpl:default:
+a class on the template call. In this case, you can use tpl:default:
 
 	<div class="standard-class {tpl:default var="{$class}"}">
 
@@ -90,6 +90,6 @@ strange and confusing (you ought to only have one.)  However, if you are
 extending a theme, you might want to override, or replace, one of its templates.
 
 To do this, you just define the same template in your file, and it will replace
-the one from the base file.  This provides an easy way for you to alter just
+the one from the base file. This provides an easy way for you to alter just
 part of a theme without having to override every part of a file you just wanted
 to change one thing in.

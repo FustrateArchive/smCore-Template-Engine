@@ -128,5 +128,3 @@ function test_template_013($harness)
 	$harness->expectFailure(1, 'tpl_template_inside_template');
 	$harness->addWrappedData('<tpl:template name="my:asdf"></tpl:template>');
 }
-
-?>

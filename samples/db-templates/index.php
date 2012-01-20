@@ -1,7 +1,7 @@
 <?php
 
-require(dirname(dirname(__FILE__)) . '/include.php');
-require(dirname(__FILE__) . '/source.php');
+require(dirname(__DIR__) . '/include.php');
+require(__DIR__ . '/source.php');
 
 // This should be the "system" namespace (templates might use another for their own stuff.)
 $nsuri = 'http://www.example.com/#site';
@@ -10,30 +10,30 @@ $context = array(
 	'site_name' => 'Testing',
 );
 
-$templates = new Toxg\TemplateList();
-$templates->setNamespaces(array('site' => $nsuri, 'tpl' => Toxg\Template::TPL_NAMESPACE));
+$templates = new smCore\TemplateEngine\TemplateList();
+$templates->setNamespaces(array('site' => $nsuri, 'tpl' => smCore\TemplateEngine\Template::TPL_NAMESPACE));
 
-// 1. TOX-G uses a flexible interface for you to provide it template data (choose one.)
+// 1. The engine uses a flexible interface for you to provide it template data (choose one.)
 
 // 1.1. Just use a string (filename is used in error messages.)
-$template = new Toxg\Source(get_template_data(), 'db:some-name-for-debugging');
+$template = new smCore\TemplateEngine\Source(get_template_data(), 'db:some-name-for-debugging');
 
 // 1.2. Use a stream (must be seekable.)
 //$fp = fopen('php://memory', 'wt+');
 //fwrite($fp, get_template_data());
 //rewind($fp);
 //
-//$template = new Toxg\Source($fp, 'db:some-name-for-debugging');
+//$template = new smCore\TemplateEngine\Source($fp, 'db:some-name-for-debugging');
 
-// 1.3. Use a filename through Toxg\SourceFile (or a subclass.)
-//file_put_contents(dirname(__FILE__) . '/.toxg.templates.tox', get_template_data());
-//$template = new Toxg\SourceFile(dirname(__FILE__) . '/.toxg.templates.tox');
+// 1.3. Use a filename through smCore\TemplateEngine\SourceFile (or a subclass.)
+//file_put_contents(__DIR__ . '/.toxg.templates.tpl', get_template_data());
+//$template = new smCore\TemplateEngine\SourceFile(__DIR__ . '/.toxg.templates.tpl');
 
 // 1.4. Use a filename directly.
-//file_put_contents(dirname(__FILE__) . '/.toxg.templates.tox', get_template_data());
-//$template = dirname(__FILE__) . '/.toxg.templates.tox';
+//file_put_contents(__DIR__ . '/.toxg.templates.tpl', get_template_data());
+//$template = __DIR__ . '/.toxg.templates.tpl';
 
-// 1.5. Implement your own subclass of Toxg\Source
+// 1.5. Implement your own subclass of smCore\TemplateEngine\Source
 //$template = new MySource(12345);
 
 // 2. You can also do a few things with the compiled cache file (choose one.)
@@ -45,13 +45,13 @@ $compiled = fopen('php://memory', 'wt+');
 //$compiled = tempnam('/tmp', 'tox');
 
 // 2.3. Use a simple filename.
-//$compiled = dirname(__FILE__) . '/.toxg.templates.php';
+//$compiled = __DIR__ . '/.toxg.templates.php';
 
 //$templates->addOverlays(
 $templates->addTemplate($template, $compiled);
 
 // For simplicity, we're compiling every time.
-Toxg\StandardElements::useIn($templates);
+smCore\TemplateEngine\StandardElements::useIn($templates);
 $templates->compileAll();
 
 if (!is_resource($compiled))
@@ -63,9 +63,9 @@ else
 	eval('?>' . stream_get_contents($compiled));
 }
 
-Toxg\Template::callTemplate($nsuri, 'main', array('context' => $context), 'above');
-Toxg\Template::callTemplate($nsuri, 'home', array('context' => $context), 'both');
-Toxg\Template::callTemplate($nsuri, 'main', array('context' => $context), 'below');
+smCore\TemplateEngine\Template::callTemplate($nsuri, 'main', array('context' => $context), 'above');
+smCore\TemplateEngine\Template::callTemplate($nsuri, 'home', array('context' => $context), 'both');
+smCore\TemplateEngine\Template::callTemplate($nsuri, 'main', array('context' => $context), 'below');
 
 function get_template_data()
 {
@@ -93,5 +93,3 @@ function get_template_data()
 	</tpl:template>
 </tpl:container>';
 }
-
-?>

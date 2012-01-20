@@ -354,5 +354,3 @@ function test_tags_element_007($harness)
 {
 	$harness->addWrappedData('<tpl:element tpl:name="div" tpl:inherit="*" value="1">test</tpl:element>');
 }
-
-?>

@@ -3,7 +3,7 @@ Overlays
 
 Overview
 --------------------------------------------------------------------------------
-Overlays are used to apply changes to templates.  An overlay consists of one or
+Overlays are used to apply changes to templates. An overlay consists of one or
 many alterations (tpl:alter elements) which get applied to templates.
 
 An alteration is, in other words, putting more things into the template.
@@ -26,7 +26,7 @@ Which would produce is output:
 Matching a template
 --------------------------------------------------------------------------------
 The match attribute specifies a list of templates that the alteration might
-match.  All of these have to have namespace prefixes, so that they apply to the
+match. All of these have to have namespace prefixes, so that they apply to the
 correct template no matter how it is referenced.
 
 Usually, you'll put your namespace definitions on a tpl:container around any
@@ -43,7 +43,7 @@ templates.
 
 Position of the alteration
 --------------------------------------------------------------------------------
-The position attribute tells it where the alteration will apply.  It has four
+The position attribute tells it where the alteration will apply. It has four
 possible values, each of which is useful in its own respect.
 
 In the examples, please consider the following template and call:
@@ -63,7 +63,7 @@ before
 		Mr.
 	</tpl:alter>
 
-	Mr. Unknown W. Brackets is cool.  That's all you can say.
+	Mr. Unknown W. Brackets is cool. That's all you can say.
 
 after
 	This will place the alteration after what the template normally outputs.
@@ -72,7 +72,7 @@ after
 		Also, llamas rock.
 	</tpl:alter>
 
-	Unknown W. Brackets is cool.  That's all you can say.  Also, llamas rock.
+	Unknown W. Brackets is cool. That's all you can say. Also, llamas rock.
 
 beforecontent
 	If the template doesn't have a tpl:content element, this is the same as
@@ -83,18 +83,18 @@ beforecontent
 		is a jerk, but that
 	</tpl:alter>
 
-	Unknown W. Brackets is a jerk, but that is cool.  That's all you can say.
+	Unknown W. Brackets is a jerk, but that is cool. That's all you can say.
 
 aftercontent
 	If there's no tpl:content element in the template, this will be the same as
-	"after".  When there is one, the alteration will be made immediately after
+	"after". When there is one, the alteration will be made immediately after
 	it.
 
 	<tpl:alter match="my:about" position="beforecontent">
 		I guess.
 	</tpl:alter>
 
-	Unknown W. Brackets is cool.  I guess.  That's all you can say.
+	Unknown W. Brackets is cool. I guess. That's all you can say.
 
 
 Nesting
@@ -114,7 +114,7 @@ As an example, take the following:
 	</my:panel>
 
 Now, let's create an alternation (actually two) to simply not show that title
-at all.  We do this using tpl:if, like so:
+at all. We do this using tpl:if, like so:
 
 	<tpl:alter match="my:panel" position="before">
 		<tpl:if test="false">
@@ -124,8 +124,8 @@ at all.  We do this using tpl:if, like so:
 		</tpl:if>
 	</tpl:alter>
 
-Presto, it's gone.  The important thing is that the template, after being
-altered, had correct nesting.  It would've looked like this:
+Presto, it's gone. The important thing is that the template, after being
+altered, had correct nesting. It would've looked like this:
 
 	<tpl:template name="my:panel">
 		<tpl:if test="false">

@@ -1,7 +1,7 @@
 <?php
 
-require(dirname(dirname(__FILE__)) . '/include.php');
-require(dirname(__FILE__) . '/theme.php');
+require(dirname(__DIR__) . '/include.php');
+require(__DIR__ . '/theme.php');
 
 session_start();
 
@@ -42,5 +42,3 @@ function session_theme_var($value = null)
 
 	return $var;
 }
-
-?>

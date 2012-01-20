@@ -3,9 +3,9 @@ Element reference
 
 Overview
 --------------------------------------------------------------------------------
-There are several standard and built-in elements supported within the TOX-G
-system.  Only elements within the TOX-G namespace (which is currently
-"urn:toxg:template", but may change) have special functionality.
+There are several standard and built-in elements supported within the smCore
+template engine. Only elements within the "tpl" namespace (which is currently
+mapped to "urn:toxg:template", but may change) have special functionality.
 
 Any element in another namespace is used to access a template, if it exists.
 
@@ -32,10 +32,10 @@ The curly brace syntax is prefered within an existing HTML element, e.g.:
 
 How namespaces are recognized
 --------------------------------------------------------------------------------
-TOX-G ignores xmlns declarations on any node that doesn't have a colon in
-its name.  It also doesn't use a "default" namespace (xmlns=.)
+ToxG ignores xmlns declarations on any node that doesn't have a colon in
+its name. It also doesn't use a "default" namespace (xmlns=.)
 
-In other words, TOX-G would think this is a template (and remove it unless a
+In other words, ToxG would think this is a template (and remove it unless a
 template was defined for it):
 
 	<mml:math xmlns:mml="http://www.w3.org/1998/Math/MathML" />
@@ -48,7 +48,7 @@ However, the following elements it would leave alone:
 
 Shortcuts
 --------------------------------------------------------------------------------
-Within normal HTML, there are two shortcuts to use common elements.  They are
+Within normal HTML, there are two shortcuts to use common elements. They are
 as follows:
 
 {$variable}
@@ -71,7 +71,7 @@ like the following:
 
 CDATA
 --------------------------------------------------------------------------------
-Within your source code, you can use CDATA sections to affect escaping.  Unlike
+Within your source code, you can use CDATA sections to affect escaping. Unlike
 in XML, CDATA affects only output and does not prevent tag parsing.
 
 	<![CDATA[ {$not_escaped} ]]>
@@ -80,27 +80,27 @@ Keep in mind, the CDATA will also be output in the HTML (which indicates to
 take the text as is, which is why it need not be escaped.)  This is mainly
 used in <script> elements.
 
-You can also use doctype="html" on a tpl:container element.  This will make it
+You can also use doctype="html" on a tpl:container element. This will make it
 parse <script> and similar elements as CDATA.
 
 
 Template calls
 --------------------------------------------------------------------------------
 When "calling" (using) a template, there's a special attribute that can be used
-named tpl:inherit.  This is also available for the tpl:element element.
+named tpl:inherit. This is also available for the tpl:element element.
 
 It contains a space separated list of attribute names, or an asterisk.
 
 The asterisk means to pass along any and all attributes passed into the
-template.  Otherwise, the list gives the names of attributes to pass along.
+template. Otherwise, the list gives the names of attributes to pass along.
 
 This is beneficial when writing convenience templates.
 
 
 Attributes
 --------------------------------------------------------------------------------
-Within elements, attributes are handled specially.  For template calls, they
-are decoded so they work the same way normal elements will.  This means:
+Within elements, attributes are handled specially. For template calls, they
+are decoded so they work the same way normal elements will. This means:
 
 	<my:title name="This &amp; That" />
 
@@ -109,14 +109,14 @@ Might produce:
 	<div class="title" title="This &amp; That">This &amp; That</div>
 
 However, you don't need to escape the values, and for expressions you
-shouldn't.  For example, this is correct:
+shouldn't. For example, this is correct:
 
 	<tpl:if test="{$first} && {$last}">There's only one.</tpl:if>
 
 
 Supported elements
 --------------------------------------------------------------------------------
-Below is a list of standard elements in this release of TOX-G.  Other elements
+Below is a list of standard elements in this release of TOX-G. Other elements
 may be supported via custom hooks.
 
 tpl:container
@@ -124,12 +124,12 @@ tpl:container
 	Similar to a "div" in HTML, this is a do-nothing element which allows you
 	to define namespaces or separate code for whatever reasons you might have.
 
-	Often used to "contain" templates.  Can also be used inside a template.
+	Often used to "contain" templates. Can also be used inside a template.
 
 	No required attributes.
 
-	May have an attribute "doctype", with the value "html" or "xhtml".  The
-	default is "xhtml".  When set to "html", <script> and <style> will trigger
+	May have an attribute "doctype", with the value "html" or "xhtml". The
+	default is "xhtml". When set to "html", <script> and <style> will trigger
 	CDATA behavior (no HTML escaping.)
 
 	<tpl:container xmlns:my="http://www.unknownbrackets.org/example/">
@@ -138,11 +138,11 @@ tpl:container
 
 tpl:template
 ................................................................................
-	Used to define a template, which can be used or altered later.  Please note,
+	Used to define a template, which can be used or altered later. Please note,
 	you do not have to define a template to call one (it will just do nothing.)
 	Altering undefined templates is also possible (see tpl:alter.)
 
-	Can only be used inside a <tpl:container> or outside everything.  Cannot be
+	Can only be used inside a <tpl:container> or outside everything. Cannot be
 	used inside itself.
 
 	The required name attribute specifies what template, and must contain a
@@ -177,17 +177,17 @@ tpl:content
 
 tpl:alter
 ................................................................................
-	Used to "alter" the use of templates, as a hook system.  Please see the
+	Used to "alter" the use of templates, as a hook system. Please see the
 	separate "overlays" documentation for more information.
 
 	Can only be used inside a tpl:container or outside everything in an overlay.
 
 	Requires a "match" attribute, which is a space separated list of templates
-	to apply the alteration to.  They must include namespace prefixes, and
+	to apply the alteration to. They must include namespace prefixes, and
 	those must be defined.
 
 	The "position" attribute is also required, and allows the values "before",
-	"after", "beforecontent", and "aftercontent".  Please see the separate
+	"after", "beforecontent", and "aftercontent". Please see the separate
 	"overlays" documentation for more information.
 
 	<tpl:template name="my:name">
@@ -200,8 +200,8 @@ tpl:alter
 
 tpl:output
 ................................................................................
-	This is used to output the content of a variable or language string.  You
-	may also use equations.  Exactly the same as using the short hand (which is
+	This is used to output the content of a variable or language string. You
+	may also use equations. Exactly the same as using the short hand (which is
 	described above under Shortcuts.)
 
 	Can be used inside templates and alterations (anywhere content can be.)
@@ -217,25 +217,9 @@ tpl:output
 	<tpl:output value="{$var} * 2" />
 	<tpl:output value="{$var} * 2" escape="false" />
 
-tpl:json
-................................................................................
-	Used to output the content of a variable of language string in JavaScript
-	Object Notation (JSON.)  Like tpl:output, you may also use equations.
-
-	Can be used inside templates and alterations (anywhere content can be.)
-
-	Requires a "value" attribute (specifying the variable or equation.)
-
-	The "escape" attribute is used to stop ToxG from using htmlspecialchars on
-	the value. It is optional, and it defaults to "true". Use "false" to prevent
-	escaping.
-
-	<tpl:json value="{$var}" />
-	<tpl:json value="{$var} * 2" as="html" />
-
 tpl:foreach
 ................................................................................
-	Used to repeat an operation for every item in a data set.  For example,
+	Used to repeat an operation for every item in a data set. For example,
 	this would commonly be used for a list of items that will be formatted the
 	same.
 
@@ -347,7 +331,7 @@ tpl:default
 
 tpl:element
 ................................................................................
-	Used to dynamically output an element into the HTML.  This can make it
+	Used to dynamically output an element into the HTML. This can make it
 	really easy to create convenience templates.
 
 	Can be used inside templates and alterations (anywhere content can be.)

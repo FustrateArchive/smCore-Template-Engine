@@ -1,11 +1,11 @@
 <?php
 
-require(dirname(dirname(__FILE__)) . '/include.php');
+require(dirname(__DIR__) . '/include.php');
 
 // The default is simply "lang".
-Toxg\Expression::setLangFunction('my_lang_formatter');
+smCore\TemplateEngine\Expression::setLangFunction('my_lang_formatter');
 
-$theme = new SampleToxgTheme(dirname(__FILE__), dirname(__FILE__));
+$theme = new SampleTheme(__DIR__, __DIR__);
 $theme->loadTemplates('templates');
 $theme->addLayer('main');
 
@@ -30,5 +30,3 @@ function my_lang_formatter($key, $params = array())
 
 	return vsprintf($string, $params);
 }
-
-?>

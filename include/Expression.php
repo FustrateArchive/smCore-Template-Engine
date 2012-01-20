@@ -1,6 +1,6 @@
 <?php
 
-namespace ToxG;
+namespace smCore\TemplateEngine;
 
 class Expression
 {
@@ -17,7 +17,7 @@ class Expression
 	protected $filters = array();
 
 	protected static $lang_function = 'lang';
-	protected static $filter_function = 'Toxg\Filters::filter';
+	protected static $filter_function = 'smCore\TemplateEngine\Filters::filter';
 
 	public static function setLangFunction($func)
 	{

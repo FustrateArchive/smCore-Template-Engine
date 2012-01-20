@@ -221,5 +221,3 @@ function test_invalid_overlay_005($harness)
 }
 
 // !!! Need tests for using tpl:content in loops, if, etc.
-
-?>

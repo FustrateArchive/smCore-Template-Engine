@@ -16,8 +16,8 @@ class ToxgTests
 
 		$this->start_test_coverage();
 
-		require(dirname(__FILE__) . '/../include/index.php');
-		require(dirname(__FILE__) . '/include/index.php');
+		require(__DIR__ . '/../include/index.php');
+		require(__DIR__ . '/include/index.php');
 
 		$this->run_tests();
 	}
@@ -117,7 +117,7 @@ class ToxgTests
 		global $argv;
 
 		$list = new ToxgTestList();
-		$list->loadFrom(dirname(__FILE__));
+		$list->loadFrom(__DIR__);
 
 		if (isset($argv))
 			$only_tests = array_diff(array_slice($argv, 1), (array) '--coverage');
@@ -178,7 +178,7 @@ class ToxgTests
 
 		ksort($coverage_data);
 
-		$f_report = @fopen(dirname(__FILE__) . '/.test.coverage', 'wt');
+		$f_report = @fopen(__DIR__ . '/.test.coverage', 'wt');
 
 		foreach ($coverage_data as $filename => $lines)
 		{

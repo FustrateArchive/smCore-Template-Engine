@@ -1,6 +1,6 @@
 <?php
 
-namespace ToxG;
+namespace smCore\TemplateEngine;
 
 class Token
 {

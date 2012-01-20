@@ -1,6 +1,6 @@
 <?php
 
-class MyTheme extends SampleToxgTheme
+class MyTheme extends SampleTheme
 {
 	protected $nsuri = 'http://www.example.com/#site';
 	protected $lang_debugging = false;
@@ -21,14 +21,14 @@ class MyTheme extends SampleToxgTheme
 		// We're going to replace the default implementation.
 		if ($this->lang_debugging)
 		{
-			$this->templates->listenEmit(Toxg\Template::TPL_NAMESPACE, 'output', array($this, 'tpl_output'));
-			Toxg\Expression::setLangFunction('MyTheme::debuggingLangString');
+			$this->templates->listenEmit(smCore\TemplateEngine\Template::TPL_NAMESPACE, 'output', array($this, 'tpl_output'));
+			smCore\TemplateEngine\Expression::setLangFunction('MyTheme::debuggingLangString');
 		}
 		else
-			Toxg\Expression::setLangFunction('my_lang_formatter');
+			smCore\TemplateEngine\Expression::setLangFunction('my_lang_formatter');
 	}
 
-	public function tpl_output(Toxg\Builder $builder, $type, array $attributes, Toxg\Token $token)
+	public function tpl_output(smCore\TemplateEngine\Builder $builder, $type, array $attributes, smCore\TemplateEngine\Token $token)
 	{
 		$this->requireEmpty($token);
 		$this->requireAttributes(array('value'), $token);
@@ -47,19 +47,19 @@ class MyTheme extends SampleToxgTheme
 		return false;
 	}
 
-	protected function requireEmpty(Toxg\Token $token)
+	protected function requireEmpty(smCore\TemplateEngine\Token $token)
 	{
 		if ($token->type !== 'tag-empty')
 			$token->toss('generic_tpl_must_be_empty', $token->prettyName());
 	}
 
-	protected function requireNotEmpty(Toxg\Token $token)
+	protected function requireNotEmpty(smCore\TemplateEngine\Token $token)
 	{
 		if ($token->type === 'tag-empty')
 			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());
 	}
 
-	protected function requireAttributes(array $reqs, Toxg\Token $token)
+	protected function requireAttributes(array $reqs, smCore\TemplateEngine\Token $token)
 	{
 		if ($token->type === 'tag-end')
 			return;
@@ -101,5 +101,3 @@ class MyTheme extends SampleToxgTheme
 		return '<<<lang:' . $key[0] . ':' . count($params) . '>>>' . $text . '<<</lang>>>';
 	}
 }
-
-?>

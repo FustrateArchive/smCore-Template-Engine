@@ -18,31 +18,31 @@ class ToxgTestTheme
 	{
 		$this->nsuri .= ':' . self::$id++;
 
-		$this->templates = new Toxg\TemplateList();
-		$this->templates->setNamespaces(array('site' => $this->nsuri, 'tpl' => Toxg\Template::TPL_NAMESPACE));
+		$this->templates = new smCore\TemplateEngine\TemplateList();
+		$this->templates->setNamespaces(array('site' => $this->nsuri, 'tpl' => smCore\TemplateEngine\Template::TPL_NAMESPACE));
 		$this->templates->setCommonVars(array('context'));
 	}
 
 	public function loadOverlay($string, $name)
 	{
-		$source = new Toxg\Source($string, $name);
+		$source = new smCore\TemplateEngine\Source($string, $name);
 		$this->templates->addOverlays(array($source));
 	}
 
 	public function loadTemplates($string, $name, $inherited = array())
 	{
-		$source = new Toxg\Source($string, $name);
+		$source = new smCore\TemplateEngine\Source($string, $name);
 
 		$inherited_sources = array();
 		foreach ($inherited as $sub_name => $string)
-			$inherited_sources[] = new Toxg\Source($string, $name . $sub_name);
+			$inherited_sources[] = new smCore\TemplateEngine\Source($string, $name . $sub_name);
 
 		$this->loadTemplatesSource($source, $name, $inherited_sources);
 	}
 
 	public function loadTemplatesSource($source, $name, $inherited_sources = array())
 	{
-		$compiled = dirname(dirname(__FILE__)) . '/.test.output.' . (self::$id++);
+		$compiled = dirname(__DIR__) . '/.test.output.' . (self::$id++);
 
 		$this->templates->addTemplate($source, $compiled, $inherited_sources);
 		$this->compiled[] = $compiled;
@@ -138,7 +138,7 @@ class ToxgTestTheme
 
 	public function compile()
 	{
-		Toxg\StandardElements::useIn($this->templates);
+		smCore\TemplateEngine\StandardElements::useIn($this->templates);
 		$this->templates->compileAll();
 		$this->templates->loadAll();
 
@@ -149,13 +149,11 @@ class ToxgTestTheme
 
 	public function isTemplateUsed($name)
 	{
-		return Toxg\Template::isTemplateUsed($this->nsuri, $name);
+		return smCore\TemplateEngine\Template::isTemplateUsed($this->nsuri, $name);
 	}
 
 	protected function callTemplate($name, $side)
 	{
-		Toxg\Template::callTemplate($this->nsuri, $name, array('context' => $this->context), $side);
+		smCore\TemplateEngine\Template::callTemplate($this->nsuri, $name, array('context' => $this->context), $side);
 	}
 }
-
-?>

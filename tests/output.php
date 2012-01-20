@@ -422,5 +422,3 @@ function test_output_escape_010($harness)
 	$harness->expectOutput('<script></script>' . htmlspecialchars(ToxgTestHarness::$to_escape) . '<script></script>');
 	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output"><script></script>{ToxgTestHarness::$to_escape}<script></script></tpl:template></tpl:container>');
 }
-
-?>

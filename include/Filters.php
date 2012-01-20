@@ -1,6 +1,6 @@
 <?php
 
-namespace Toxg;
+namespace smCore\TemplateEngine;
 
 class Filters
 {

@@ -38,14 +38,14 @@ class ToxgTestList
 		try
 		{
 			$harness = new ToxgTestHarness();
-			Toxg\StandardElements::useIn($harness);
-			$harness->setNamespaces(array('tpl' => Toxg\Template::TPL_NAMESPACE, 'my' => 'dummy' . $func));
+			smCore\TemplateEngine\StandardElements::useIn($harness);
+			$harness->setNamespaces(array('tpl' => smCore\TemplateEngine\Template::TPL_NAMESPACE, 'my' => 'dummy' . $func));
 			$func($harness);
 			$harness->compile('dummy' . $func);
 
 			$failure = $harness->isFailure();
 		}
-		catch (Toxg\Exception $e)
+		catch (smCore\TemplateEngine\Exception $e)
 		{
 			$failure = $harness->isExceptionFailure($e);
 		}

@@ -6,7 +6,7 @@ Why use callbacks?
 A callback is a good way to load data for a template to use, and only load it
 if the template needs it.
 
-You could use custom elements for this, and basically are.  But the idea of
+You could use custom elements for this, and basically are. But the idea of
 using callbacks (or in other words hooks) is to do things at runtime which are
 necessary.
 
@@ -16,7 +16,7 @@ Example scenario
 For the purposes of example, let's suppose you have the following template code:
 
 <tpl:template name="site:about-us">
-	We are a zoo.  These are the animals we have:
+	We are a zoo. These are the animals we have:
 	<site:animals />
 </tpl:template>
 
@@ -36,7 +36,7 @@ case that they are going to be displayed, but want to leave their display up to
 the template author.
 
 In this case, you would "hook" the <tpl:template name="site:animals"> element,
-and load the appropriate information there.  For example:
+and load the appropriate information there. For example:
 
 	function maybeHookTemplate(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
 	{
@@ -53,7 +53,7 @@ and load the appropriate information there.  For example:
 Best practices
 --------------------------------------------------------------------------------
 Doing a bunch of ifs for each template does not make for very easily extended
-code.  Instead, you might want to add a generic hook, e.g. into your event
+code. Instead, you might want to add a generic hook, e.g. into your event
 system (based on the name.)
 
 For this purpose, within the templates, it's best to use a certain namespace
@@ -65,5 +65,5 @@ For example, it could be a performance problem if you hooked every instance of:
 		Blah blah.
 	</my:rounded-corners>
 
-If that was a commonly used template/widget interface.  A good choice might be
+If that was a commonly used template/widget interface. A good choice might be
 "my" for internal template stuff, and "site" for stuff that hooks into things.

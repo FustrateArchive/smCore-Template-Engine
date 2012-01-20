@@ -269,5 +269,3 @@ function test_expression_037($harness)
 {
 	$harness->addWrappedData('<tpl:output value="{#lang:{$x %date}}" />');
 }
-
-?>

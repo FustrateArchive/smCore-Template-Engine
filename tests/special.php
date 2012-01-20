@@ -272,5 +272,3 @@ function test_special_errors_004($harness)
 		throw $e;
 	}
 }
-
-?>

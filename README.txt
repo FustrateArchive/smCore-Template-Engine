@@ -1,9 +1,9 @@
-TOX-G: Template Overlay XHTML Generator
+smCore Template Engine
 ================================================================================
 
 Version
 --------------------------------------------------------------------------------
-Release 0.1-alpha6 made on 2011-06-19.
+Release 1.0 Alpha 1
 
 
 Overview
@@ -36,19 +36,13 @@ It's a great idea to take a look at the documentation, especially the ones named
 
 Supported PHP versions
 --------------------------------------------------------------------------------
-TOX-G has been tested on and fully supports the following PHP versions:
+The smCore Template Engine has been tested on and fully supports the following
+PHP versions:
 
-	5.1.0 - 5.1.6
-	5.2.0 - 5.2.17
-	5.3.0 - 5.3.6
+	5.3.0 - 5.3.9
 
 It has also been tested on a 2011-04-30 snapshot of PHP 6, and is believed to
-be forwards-compatible.
-
-On PHP 5.1.x, an implementation of json_encode() is required for full
-functionality.  One such implementation is available here:
-
-	http://www.boutell.com/scripts/jsonwrapper.html
+be forwards-compatible. Versions prior to 5.3.0 are not supported.
 
 
 Known issues

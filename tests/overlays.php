@@ -131,5 +131,3 @@ function test_alter_010($harness)
 	$harness->addData('<tpl:template name="my:stuff"></tpl:template>');
 	$harness->addOverlay('<tpl:alter match="my:stuff" position="after" xmlns:blah="http://www.example.com/#blah0"><blah:checkme /></tpl:alter>');
 }
-
-?>

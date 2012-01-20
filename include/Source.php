@@ -31,14 +31,14 @@
  *
  * The basic use of this class will look like:
  *
- * $source = new Source($data, 'filename.tox');
+ * $source = new Source($data, 'filename.tpl');
  * while ($token = $source->readToken())
  *     do_something($token);
  *
  * $nsuri = $source->getNamespace($ns);
  */
 
-namespace ToxG;
+namespace smCore\TemplateEngine;
 
 class Source
 {

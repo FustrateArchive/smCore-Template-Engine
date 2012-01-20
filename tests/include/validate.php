@@ -78,5 +78,3 @@ function php_validate_syntax($code)
 
 	return $result;
 }
-
-?>
