@@ -1,8 +1,7 @@
-Overlays
-================================================================================
+# Overlays
 
-Overview
---------------------------------------------------------------------------------
+## Overview
+
 Overlays are used to apply changes to templates. An overlay consists of one or
 many alterations (tpl:alter elements) which get applied to templates.
 
@@ -10,11 +9,11 @@ An alteration is, in other words, putting more things into the template.
 
 A basic example of this is:
 
-	<tpl:template name="my:name" xmlns:my="http://www.example.com/">
+	<tpl:template name="my:name">
 		Unknown W. Brackets
 	</tpl:template>
 
-	<tpl:alter match="my:name" position="before" xmlns:my="http://www.example.com/">
+	<tpl:alter match="my:name" position="before">
 		Mr.
 	</tpl:alter>
 
@@ -22,9 +21,8 @@ Which would produce is output:
 
 	Mr. Unknown W. Brackets
 
+## Matching a template
 
-Matching a template
---------------------------------------------------------------------------------
 The match attribute specifies a list of templates that the alteration might
 match. All of these have to have namespace prefixes, so that they apply to the
 correct template no matter how it is referenced.
@@ -41,8 +39,8 @@ templates.
 	</tpl:alter>
 
 
-Position of the alteration
---------------------------------------------------------------------------------
+## Position of the alteration
+
 The position attribute tells it where the alteration will apply. It has four
 possible values, each of which is useful in its own respect.
 
@@ -56,49 +54,52 @@ In the examples, please consider the following template and call:
 
 	<my:about>is cool.</my:about>
 
-before
-	This will place the alteration before what the template normally outputs.
+### before
+
+This will place the alteration before what the template normally outputs.
 
 	<tpl:alter match="my:about" position="before">
 		Mr.
 	</tpl:alter>
 
-	Mr. Unknown W. Brackets is cool. That's all you can say.
+Mr. Unknown W. Brackets is cool. That's all you can say.
 
-after
-	This will place the alteration after what the template normally outputs.
+### after
+
+This will place the alteration after what the template normally outputs.
 
 	<tpl:alter match="my:about" position="after">
 		Also, llamas rock.
 	</tpl:alter>
 
-	Unknown W. Brackets is cool. That's all you can say. Also, llamas rock.
+Unknown W. Brackets is cool. That's all you can say. Also, llamas rock.
 
-beforecontent
-	If the template doesn't have a tpl:content element, this is the same as
-	"after"... but if it has one, the alteration will be made before the
-	tpl:content element.
+### beforecontent
+
+If the template doesn't have a tpl:content element, this is the same as
+"after"... but if it has one, the alteration will be made before the
+tpl:content element.
 
 	<tpl:alter match="my:about" position="beforecontent">
 		is a jerk, but that
 	</tpl:alter>
 
-	Unknown W. Brackets is a jerk, but that is cool. That's all you can say.
+Unknown W. Brackets is a jerk, but that is cool. That's all you can say.
 
-aftercontent
-	If there's no tpl:content element in the template, this will be the same as
-	"after". When there is one, the alteration will be made immediately after
-	it.
+### aftercontent
+
+If there's no tpl:content element in the template, this will be the same as
+"after". When there is one, the alteration will be made immediately after
+it.
 
 	<tpl:alter match="my:about" position="beforecontent">
 		I guess.
 	</tpl:alter>
 
-	Unknown W. Brackets is cool. I guess. That's all you can say.
+Unknown W. Brackets is cool. I guess. That's all you can say.
 
+## Nesting
 
-Nesting
---------------------------------------------------------------------------------
 It's important to note that elements don't need to be properly nested within
 alternations, as long as the resulting template would be properly nested.
 
@@ -135,8 +136,8 @@ altered, had correct nesting. It would've looked like this:
 	</tpl:template>
 
 
-Variables
---------------------------------------------------------------------------------
+## Variables
+
 When variables are given to a template, you can use them in alterations too.
 
 For example:

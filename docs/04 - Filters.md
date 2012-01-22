@@ -3,7 +3,7 @@
 ## Overview
 
 Filters are used on variable and language references to manipulate the value that
-is output. There are currently 32 filters built into the smCore template engine,
+is output. There are currently 33 filters built into the smCore template engine,
 and developers can add their own filters with a simple method call.
 
 **The filter syntax has not yet been updated from the percent+semicolon syntax.
@@ -13,7 +13,7 @@ This document references a future syntax.**
 
 Formatting is very easy to use. In order to add a filter to an existing reference,
 add `|filter_name($param, 'eters')` at the end of the reference. Multiple filters
-can be added to a single reference.
+can be added to a single reference, and are evaluated from left to right.
 
 In most cases, expressions with filters might look like the following:
 
@@ -33,154 +33,199 @@ In most cases, expressions with filters might look like the following:
 		Formats $price into something like 2,000.57
 
 	{$thing |my_filter($first, $second.param, 'third', #fourth)}
-		Formats using a custom filter named 'my_formatter' with many parameters.
+		Applies a custom filter named 'my_formatter' with many parameters.
+
+On the code level, filters are passed the current value of the reference (a variable
+or language string), and return a modified version of that value.
 
 ## Default Filters - WIP
 
 ### ucwords
 Capitalizes the first character of every word.
 
-	{$var |ucwords}
+	{$text |ucwords}
 
 ### ucfirst
 Capitalizes the first chracter of the string, lowercases everything else.
 
-	{$var |ucfirst}
+	{$text |ucfirst}
 
 ### upper
-Turns the entire string to uppercase.
+Formats the entire string into uppercase.
 
-	{$var |upper}
+	{$scream_this |upper}
 
 ### lower
-Turns the entire string to lowercase.
+Formats the entire string into lowercase.
 
-	{$var |lower}
+	{$whisper_this |lower}
 
 ### trim
 Removes whitespace from the start and end of the string.
 
-	{$var |trim}
+	{$text |trim}
 
 ### rtrim
 Removes whitespace from the end (right) of the string.
 
-	{$var |rtrim}
+	{$text |rtrim}
 
 ### ltrim
 Removes whitespace from the start (left) of the string.
 
-	{$var |ltrim}
+	{$text |ltrim}
 
 ### even
-Returns true if the variable is an even integer (modulo 2 = 0).
+Returns true if the variable is an even integer (modulo 2 = 0), otherwise false.
 
-	{$var |even}
+	{$age |even}
 
 ### odd
-Returns true if the variable is an odd integer (modulo 2 = 1).
+Returns true if the variable is an odd integer (modulo 2 = 1), otherwise false.
 
-	{$var |odd}
+	{$age |odd}
 
 ### contains
 If the variable is an array, returns true if the parameter is in the array.
 If the variable is a string, returns true if the parameter can be found in the string.
+Returns false in all other cases.
 
-	{$array_of_vars |contains('5')}
-	{$string_var |contains('abc')}
+	{$scores |contains('95')}
+	{$alphabet |contains('abc')}
 
 ### empty
-Returns true if the variable is empty, using PHP's `empty()` function.
+Returns true if the variable is empty, using PHP's `empty()` function, otherwise false.
 
-	{$var |empty}
+	{$glass |empty}
 
 ### null
-Returns true if the variable is null.
+Returns true if the variable is null, otherwise false.
 
-	{$var |null}
+	{$IQ |null}
 
 ### divisibleby
 Returns true if the variable is a number divisible by the parameter.
 
-	{$var |divisibleby(3)}
+	{$age |divisibleby(3)}
 
 ### length
 Returns the length of the variable. Arrays return their count, and strings return their length.
 
-	{$var |length}
+	{$posts |length}
+	{$name |length}
 
 ### wordcount
 Returns the number of words in the variable.
 
-	{$var |wordcount}
+	{$poem |wordcount}
 
 ### urlencode
+Returns a URL-safe version of the value.
 
 	{$var |urlencode}
+		Would turn "hello world" into "hello%20world"
 
 ### json
-Returns a JSON representation of the data in `$var`
+Returns a JSON representation of the data in the variable.
 
-	{$var |json}
+	{$person |json}
 
 ### join
+Returns the elements in the value joined by the parameter.
 
-	{$var |join(", ")}
+	{$tags |join(", ")}
 
 ### random
+Returns a random value from an array, optionally returns a random selection.
 
-	{$var |random}
+	{$messages |random}
+	{$messages |random(3)}
 
 ### stripchars
+Removes the characters in the parameter from the value.
 
-	{$var |stripchars}
+	{$speech |stripchars('qxz')}
 
 ### striptags
+Removes HTML tags from the value, and optionally allows you to keep some.
 
 	{$var |striptags}
+	{$post |striptags('b i strong em tt')}
 
 ### truncate
+Cut off the value after a certain amount of characters, and optionally append a string if it does get cut.
 
 	{$var |truncate(15)}
+	{$var |truncate(15, '...')}
 
 ### truncatewords
+Cut off the value after a certain amount of words, and optionally append a string if it does get cut.
 
 	{$var |truncatewords(12)}
+	{$var |truncatewords(12, $read_more_button)}
 
 ### wrap
+Wrap the text every X characters, regardless of words.
 
 	{$var |wrap(80)}
 
 ### wordwrap
+Wrap the text every X characters, word-aware.
 
 	{$var |wordwrap(80)}
 
 ### date
+Format a timestamp into human-readable format.
 
-	{$var |date}
-	{$var |date("n/j/Y @ g:i:s A")}
+	{$birthday |date}
+		Format $birthday using the default date format.
+
+	{$birthday |date("n/j/Y @ g:i:s A")}
+		Format $birthday with a custom formatting string.
 
 ### time
+Same as `|date`, but without a parameter it only displays the time.
 
 	{$var |time}
+	{$var |time("g:i A")}
 
 ### money
+Format the value as a monetary value, with an optional formatting string and locale.
 
-	{$var |money}
+	{$price |money}
+		Might return $1,400.17
+
+	{$price |money("%.2n")}
+		Format according to a formatting string.
+
+	{$price |money("%.2n", "it_IT")}
+		Format Italian style!
 
 ### float
+Format the value as a float, with optional precision
 
-	{$var |float}
-	{$var |float(3)}
+	{$rating |float}
+		Might return 4.81516
+
+	{$rating |float(3)}
+		If $rating is 4.815162342, return 4.815
+
+### nl2br
+Convert newline characters (such as from `|wordwrap`) into HTML break tags.
+
+	{$poem |wordwrap(25) |nl2br}
 
 ### default
+If the value is empty according to PHP's `empty()` function, use the passed parameter instead.
 
-	{$var |default('N/A')}
+	{$name |default('John Doe')}
 
 ### raw
+If the value would be escaped, as it normally would, do not escape it.
 
-	{$var |raw}
+	{$safe_html |raw}
 
 ### escape
+If the value would not be escaped, such as inside a CDATA block, escape it.
 
-	{$var |escape}
+	{$unsafe_code |escape}

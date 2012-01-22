@@ -1,8 +1,7 @@
-For developers - creating template callbacks
-================================================================================
+# For Developers - Creating Template Callbacks
 
-Why use callbacks?
---------------------------------------------------------------------------------
+## Why use callbacks?
+
 A callback is a good way to load data for a template to use, and only load it
 if the template needs it.
 
@@ -11,31 +10,31 @@ using callbacks (or in other words hooks) is to do things at runtime which are
 necessary.
 
 
-Example scenario
---------------------------------------------------------------------------------
+## Example scenario
+
 For the purposes of example, let's suppose you have the following template code:
 
-<tpl:template name="site:about-us">
-	We are a zoo. These are the animals we have:
-	<site:animals />
-</tpl:template>
+	<tpl:template name="site:about-us">
+		We are a zoo. These are the animals we have:
+		<site:animals />
+	</tpl:template>
 
-<tpl:template name="site:animals">
-	<ul>
-		<tpl:foreach from="{$animals}" as="{$animal}">
-			<li>{$animal.name}</li>
-		</tpl:foreach>
-	</ul>
-</tpl:template>
+	<tpl:template name="site:animals">
+		<ul>
+			<tpl:foreach from="{$animals}" as="{$animal}">
+				<li>{$animal.name}</li>
+			</tpl:foreach>
+		</ul>
+	</tpl:template>
 
 
-Loading only what you need
---------------------------------------------------------------------------------
+## Loading only what you need
+
 In the above template, suppose you only want to load the list of animals in the
 case that they are going to be displayed, but want to leave their display up to
 the template author.
 
-In this case, you would "hook" the <tpl:template name="site:animals"> element,
+In this case, you would "hook" the `<tpl:template name="site:animals">` element,
 and load the appropriate information there. For example:
 
 	function maybeHookTemplate(ToxgBuilder $builder, $type, array $attributes, ToxgToken $token)
@@ -50,8 +49,8 @@ and load the appropriate information there. For example:
 	$template->listenEmitBasic('template', 'maybeHookTemplate');
 
 
-Best practices
---------------------------------------------------------------------------------
+## Best practices
+
 Doing a bunch of ifs for each template does not make for very easily extended
 code. Instead, you might want to add a generic hook, e.g. into your event
 system (based on the name.)
