@@ -2,7 +2,7 @@
 	<tpl:template name="site:main"><!DOCTYPE html>
 		<html>
 			<head>
-				<title>{$context.site_name %ucwords}</title>
+				<title>{$context.site_name |ucwords}</title>
 				<style type="text/css">
 					body
 					{

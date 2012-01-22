@@ -22,3 +22,4 @@ require(__DIR__ . '/Parser.php');
 require(__DIR__ . '/Token.php');
 require(__DIR__ . '/StandardElements.php');
 require(__DIR__ . '/Theme.php');
+require(__DIR__ . '/Filters.php');

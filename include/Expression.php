@@ -32,7 +32,7 @@ class Expression
 	public function __construct($data, Token $token, $escape = false)
 	{
 		// Filters can have whitespace before them, so remove it. Makes reading easier when they're not there.
-		$this->data = preg_replace('~\s+%~', '%', $data);
+		$this->data = preg_replace('~\s+\|~', '|', $data);
 		$this->data_len = strlen($this->data);
 		$this->token = $token;
 		$this->escape = $escape !== false;
@@ -242,7 +242,7 @@ class Expression
 
 	protected function readVarRef()
 	{
-		/*	It looks like this: {$xyz.abc[$mno][nilla].$rpg %filter %filter:param}
+		/*	It looks like this: {$xyz.abc[$mno][nilla].$rpg |filter |filter($param)}
 			Which means:
 				x.y.z = x [ y ] [ z ]
 				x[y.z] = x [ y [ z ] ] 
@@ -252,7 +252,7 @@ class Expression
 			When we hit a ., the next item is surrounded by brackets.
 			When we hit a [, the next item has a [ before it.
 			When we hit a ], there is no item, but just a ].
-			When we hit a %, we're looking at a filter.
+			When we hit a |, we're looking at a filter.
 		*/
 
 		$built = '';
@@ -261,7 +261,7 @@ class Expression
 
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '->', '}', '%', ':'), 1);
+			$next = $this->firstPosOf(array('[', '.', ']', '->', '}', '|'), 1);
 
 			if ($next === false)
 				$next = $this->data_len;
@@ -318,22 +318,9 @@ class Expression
 				$this->data_pos--;
 				break;
 			}
-			else if ($c === '%')
+			else if ($c === '|')
 			{
-				$name = $this->eatUntil($next);
-
-				if (empty($name))
-					$this->toss('expression_filter_no_name');
-
-				$this->filters[$name] = array();
-			}
-			else if ($c === ':')
-			{
-				if (empty($this->filters))
-					$this->toss('expression_unexpected_semicolon');
-
-				// We're going to be greedy, now that we're pretty much starting a whole new expression.
-				$this->filters[end(array_keys($this->filters))][] = $this->readVarPart($next, false, true);
+				$this->readFilter();
 			}
 			else
 			{
@@ -352,7 +339,7 @@ class Expression
 
 	protected function readLangRef()
 	{
-		/*	It looks like this: {#xyz.abc[$mno][nilla].$rpg %filter %filter:param}
+		/*	It looks like this: {#xyz.abc[$mno][nilla].$rpg |filter |filter($param)}
 			Which means:
 				x.y.z = x [ y ] [ z ]
 				x[y.z] = x [ y [ z ] ] 
@@ -362,7 +349,7 @@ class Expression
 			When we hit a ., the next item is surrounded by brackets.
 			When we hit a [, the next item has a [ before it.
 			When we hit a ], there is no item, but just a ].
-			When we hit a %, we're looking at a filter.
+			When we hit a |, we're looking at a filter.
 		*/
 
 		$key = array();
@@ -372,7 +359,7 @@ class Expression
 
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '}', ':', '%'), 1);
+			$next = $this->firstPosOf(array('[', '.', ']', '}', '|'), 1);
 
 			if ($next === false)
 				$next = $this->data_len;
@@ -415,28 +402,9 @@ class Expression
 				$this->data_pos--;
 				break;
 			}
-			else if ($c === ':')
+			else if ($c === '|')
 			{
-				// We're going to be greedy, now that we're pretty much starting a whole new expression.
-				$value = $this->readVarPart($next, false, true);
-
-				// Sometimes we'll get an array back, so let's flatten it.
-				if (is_array($value))
-					$value = implode('', $value);
-
-				if (!empty($this->filters))
-					$this->filters[end(array_keys($this->filters))][] = $value;
-				else
-					$params[] = $value;
-			}
-			else if ($c === '%')
-			{
-				$name = $this->eatUntil($next);
-
-				if (empty($name))
-					$this->toss('filter_no_name');
-
-				$this->filters[$name] = array();
+				$this->readFilter();
 			}
 		}
 
@@ -452,18 +420,68 @@ class Expression
 		return $expr . ')';
 	}
 
+	protected function readFilter()
+	{
+		$name = '';
+		$params = array();
+
+		// Rewind so that we capture the name
+		$this->data_pos--;
+
+		while ($this->data_pos < $this->data_len)
+		{
+			$next = $this->firstPosOf(array('(', ')', '|', '}', ','), 1);
+
+			if ($next === false)
+				$next = $this->data_len;
+
+			$c = $this->data[$this->data_pos++];
+
+			if ($c === '|')
+			{
+				$name = $this->eatUntil($next);
+
+				if ($name === '')
+					$this->toss('expression_filter_name_empty');
+			}
+			else if ($c === '(')
+			{
+				$params[] = $this->readVarPart($next, false, true);
+			}
+			else if ($c === ')')
+			{
+				break;
+			}
+			else if ($c === '}')
+			{
+				// All done - but don't skip it, our caller doesn't expect that.
+				$this->data_pos--;
+				break;
+			}
+			else if ($c === ',')
+			{
+				$this->eatWhite();
+
+				// We're going to be greedy, now that we're pretty much starting a whole new expression.
+				$params[] = $this->readVarPart($next, false, true);
+			}
+		}
+
+		$this->filters[$name] = $params;
+	}
+
 	protected function readVarPart($end, $require = false, $greedy = false)
 	{
 		// If we're being greedy, don't stop at indexes.
 		if ($greedy)
-			$end = $this->firstPosOf(array(':', '%', '}'), 1);
+			$end = $this->firstPosOf(array(',', '|', ')', '}'), 1);
 
 		$c = $this->data[$this->data_pos];
 
-		// If a curly bracket isn't provided,
+		// If a curly bracket isn't provided, get smart.
 		if ($c === '$' || $c === '#')
 		{
-			$expr = substr($this->data, $this->data_pos, $end - $this->data_pos);
+			$expr = mb_substr($this->data, $this->data_pos, $end - $this->data_pos);
 			$this->data_pos += strlen($expr);
 
 			return self::variable('{' . $expr . '}', $this->token);
@@ -502,7 +520,7 @@ class Expression
 		}	
 
 		if ($brackets === 0)
-			return substr($this->data, $start, $this->data_pos - $start);
+			return mb_substr($this->data, $start, $this->data_pos - $start);
 
 		$this->toss('inner_token_unmatched_braces');
 	}
@@ -511,14 +529,25 @@ class Expression
 	{
 		$value = $this->eatUntil($end);
 
-		// Did we split inside a string literal? Try to find the rest
-		if (!empty($value) && ($value[0] === '"' || $value[0] === '\'') && ($value[0] !== substr($value, -1) || strlen($value) === 1))
-		{
-			$next = $this->firstPosOf(array($value[0]));
-			$value = substr($value, 1) . $this->eatUntil($next);
+		// Short circuit this one
+		if (empty($value))
+			return '\'\'';
 
-			// Skip over the ending quotation mark.
-			$this->data_pos++;
+		if ($value[0] === '"' || $value[0] === '\'')
+		{
+			// If it's already in quotation marks, take them out
+			if ($value[0] === mb_substr($value, -1))
+				$value = mb_substr($value, 1, -1);
+
+			// Did we split inside a string literal? Try to find the rest
+			else if ($value[0] !== mb_substr($value, -1) || strlen($value) === 1)
+			{
+				$next = $this->firstPosOf(array($value[0]));
+				$value = mb_substr($value, 1) . $this->eatUntil($next);
+
+				// Skip over the ending quotation mark.
+				$this->data_pos++;
+			}
 		}
 
 		return '\'' . addcslashes($value, '\\\'') . '\'';
@@ -558,7 +587,7 @@ class Expression
 
 	protected function eatUntil($pos)
 	{
-		$data = substr($this->data, $this->data_pos, $pos - $this->data_pos);
+		$data = mb_substr($this->data, $this->data_pos, $pos - $this->data_pos);
 		$this->data_pos = $pos;
 
 		return $data;

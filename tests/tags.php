@@ -247,62 +247,6 @@ function test_tags_set_009($harness)
 	$harness->addWrappedOverlay('<tpl:set var="{$x}" value="1" />');
 }
 
-function test_tags_default_001($harness)
-{
-	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
-	$harness->addWrappedData('<tpl:default></tpl:default>');
-}
-
-function test_tags_default_002($harness)
-{
-	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
-	$harness->addWrappedData('<tpl:default var="{$x}" default="{$y}"></tpl:default>');
-}
-
-function test_tags_default_003($harness)
-{
-	$harness->expectFailure(1, 'generic_tpl_must_be_empty');
-	$harness->addWrappedData('<tpl:default var="{$x}" default="1"></tpl:default>');
-}
-
-function test_tags_default_004($harness)
-{
-	$harness->expectFailure(1, 'expression_invalid_meta');
-	$harness->addWrappedData('<tpl:default var="2" default="1" />');
-}
-
-function test_tags_default_005($harness)
-{
-	$harness->addWrappedData('<tpl:default var="{$x}" />');
-}
-
-function test_tags_default_006($harness)
-{
-	$harness->expectFailure(1, 'generic_tpl_missing_required');
-	$harness->addWrappedData('<tpl:default default="{$x}" />');
-}
-
-function test_tags_default_007($harness)
-{
-	$harness->addWrappedData('<tpl:default var="{$x}" default="{$y}" />');
-}
-
-function test_tags_default_008($harness)
-{
-	$harness->addWrappedData('<tpl:default var="{$x}" default="1" />');
-}
-
-function test_tags_default_009($harness)
-{
-	$harness->addDataForOverlay();
-	$harness->addWrappedOverlay('<tpl:default var="{$x}" default="1" />');
-}
-
-function test_tags_default_010($harness)
-{
-	$harness->addWrappedData('<tpl:default var="{#x}" default="1" />');
-}
-
 function test_tags_container_001($harness)
 {
 	$harness->addWrappedData('<tpl:container />');
