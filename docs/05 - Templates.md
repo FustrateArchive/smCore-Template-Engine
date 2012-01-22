@@ -1,28 +1,26 @@
-Templates
-================================================================================
+# Templates
 
-Overview
---------------------------------------------------------------------------------
+## Overview
+
 Templates are a basic design element in ToxG. They are used for many things,
 such as:
 
-  - integration with the code (e.g. which templates are shown.)
-  - convenience "macros" (common tedious HTML.)
-  - hooks for common changes and additions.
-  - overriding default or base themes.
+- integration with the code (e.g. which templates are shown.)
+- convenience "macros" (common tedious HTML.)
+- hooks for common changes and additions.
+- overriding default or base themes.
 
 
-Integrating with the code
---------------------------------------------------------------------------------
+## Integrating with the code
+
 On a basic level, the code will probably start off by loading a template, and
 having it produce the content of the page. It might also use an "html" template
 or one for the header/footer.
 
 It's also possible that using a template might trigger the code to do something.
 
+## For convenience and ease
 
-For convenience and ease
---------------------------------------------------------------------------------
 Sometimes there's some HTML that you just have to write out a lot. For example,
 consider the case of rounded corners compatible with older browsers... you might
 find yourself writing:
@@ -37,11 +35,11 @@ find yourself writing:
 
 Instead, you might use a template:
 
-	<my:rounded>
+	<site:rounded>
 		stuff
-	</my:rounded>
+	</site:rounded>
 
-	<tpl:template name="my:rounded" xmlns:my="http://www.example.com/">
+	<tpl:template name="site:rounded">
 		<div class="rounded">
 			<div class="top"><div></div></div>
 			<div class="content">
@@ -51,20 +49,21 @@ Instead, you might use a template:
 		</div>
 	</tpl:template>
 
+and then use `<site:rounded>` every time you want to display a rounded box.
 
-What about putting a variable in?
---------------------------------------------------------------------------------
+## What about putting a variable in?
+
 You can even use variables in templates, which is what really makes them useful.
 Let's take for example, outputting an image button:
 
-	<my:image-button name="save" alt="{#save}" />
+	<site:image-button name="save" alt="{#save}" />
 
-	<tpl:template name="my:image-button" xmlns:my="http://www.example.com/">
+	<tpl:template name="site:image-button">
 		<input type="image" name="{$name}" src="/images/buttons/{$name}.png" alt="{$alt}" value="{$alt}" class="button-{$name}" />
 	</tpl:template>
 
 See those {$name} and {$alt} parts?  They refer to the attributes you put on
-my:image-button. Another very common use for this is passing along classes:
+site:image-button. Another very common use for this is passing along classes:
 
 	<div class="standard-class {$class}" />
 
@@ -73,18 +72,16 @@ a class on the template call. In this case, you can use tpl:default:
 
 	<div class="standard-class {tpl:default var="{$class}"}">
 
+## Hooks for common alterations
 
-Hooks for common alterations
---------------------------------------------------------------------------------
 Templates are also a way to integrate with overlays, which alter templates.
-See the documentation for "overlays" for more information.
+See the [overlays documentation](./overlays.md) for more information.
 
 Just remember you don't have to define a template to use it, so you can always
 call a template so that other things can add things in that area.
 
+## Overriding base templates
 
-Overriding base templates
---------------------------------------------------------------------------------
 You can't define the same template twice in the same file, because that's just
 strange and confusing (you ought to only have one.)  However, if you are
 extending a theme, you might want to override, or replace, one of its templates.

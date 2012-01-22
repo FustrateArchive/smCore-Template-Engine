@@ -1,29 +1,27 @@
-For developers - code workflow
-================================================================================
+# For Developers - Code Workflow
 
-Overview
---------------------------------------------------------------------------------
+## Overview
+
 The smCore template engine uses a very simple lexing, parsing, and code building
 system. The internal system uses events to make it easy to extend. This document
 will give you a "high level" overview of how the system functions.
 
+## Standard code flow
 
-Standard code flow
---------------------------------------------------------------------------------
 Here's a basic tree (looking at this alone may not make it clearer, read below):
 
--> TemplateList
-	-> Template
-		-> Parser
-			-> Source
-				-> Token
-					-> Exception
-			-> Overlay
-			-> Prebuilder
-			-> Builder
-				-> StandardElements
-					-> Expression
-				-> Errors
+	TemplateList
+		Template
+			Parser
+				Source
+					Token
+						Exception
+				Overlay
+				Prebuilder
+				Builder
+					StandardElements
+						Expression
+					Errors
 
 Compiling starts with Template. It primarily sets up other classes.
 
@@ -53,9 +51,8 @@ Builder has its own event system, and this fires off events to get any
 elements used (such as tpl:foreach) processed. StandardElements handles
 all the built in ones.
 
+## The main event system
 
-The main event system
---------------------------------------------------------------------------------
 Both Parser and Builder have event systems at their center.
 
 Overlay listens to the parser to insert the alterations at the appropriate
@@ -74,10 +71,9 @@ In the Builder, events are fired off to generate the actual code for the
 final template. The only thing it manages itself is the code flow and debug
 information for file/line numbers in errors.
 
+## The tokenizing/lexing process
 
-The tokenizing/lexing process
---------------------------------------------------------------------------------
-Source objects represent a source of TOX-G data, and process it into tokens
+Source objects represent a source of template data, and process it into tokens
 for Parser and Overlay to use.
 
 When the Source has completely processed a token, it creates a Token
@@ -87,9 +83,8 @@ as file and line information.
 The token itself is where most exceptions come from, because the token retains
 all the necessary file and line information to generate quality error messages.
 
+## Actually building the code
 
-Actually building the code
---------------------------------------------------------------------------------
 StandardElements hooks into the Builder, and is asked to provide the
 Builder with code for any element it hits. It's in here that the actual
 processing happens.

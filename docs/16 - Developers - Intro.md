@@ -1,8 +1,7 @@
-For developers - introduction
-================================================================================
+# For Developers - Introduction
 
-Hacking
---------------------------------------------------------------------------------
+## Hacking
+
 This uses tests pretty heavily to ensure that things work like they should.
 
 When making changes, make sure to run the tests to ensure you haven't made
@@ -12,9 +11,8 @@ expected.
 If tests fail, you should modify them so they pass, or change your code so
 they pass. Ignoring failures could lead to confusing bugs.
 
+## Coverage
 
-Coverage
---------------------------------------------------------------------------------
 The tests should already cover most of the codebase, but if you make changes,
 make sure to add tests for what you add or fix, as well as testing the error
 messages you return.

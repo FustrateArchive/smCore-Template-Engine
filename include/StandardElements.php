@@ -18,7 +18,6 @@ class StandardElements
 		$tags = array(
 			'call',
 			'cycle',
-			'default',
 			'element',
 			'else',
 			'flush',
@@ -114,28 +113,6 @@ class StandardElements
 
 		// Generate the code
 		$builder->emitCode('if (!isset(' . $cycle_array . ')) {' . $cycle_array . ' = array(' . implode(',', $values) . '); ' . $cycle_counter . ' = 0;} else {' . $cycle_counter . '++; } if (' . $cycle_counter . ' > count(' . $cycle_array . ') - 1) {' . $cycle_counter . ' = 0;} echo ' . $cycle_array . '[' . $cycle_counter . '];', $token);
-	}
-
-	public function tpl_default(Builder $builder, $type, array $attributes, Token $token)
-	{
-		$this->requireEmpty($token);
-		$this->requireAttributes(array('var'), $attributes, $token);
-
-		$value = $builder->parseExpression('variable', $attributes['var'], $token);
-		if (isset($attributes['default']))
-			$default = $builder->parseExpression('stringWithVars', $attributes['default'], $token);
-		else
-			$default = '\'\'';
-
-		// !!! Better way to detect lang use?
-		if (substr($value, 0, 1) !== '$')
-			$builder->emitCode('if (' . $value . ') echo htmlspecialchars(' . $value . ', ENT_COMPAT, "UTF-8");', $token);
-		else
-			$builder->emitCode('if (!empty(' . $value . ')) echo htmlspecialchars(' . $value . ', ENT_COMPAT, "UTF-8");', $token);
-
-		// Don't bother with an else if it's not needed.
-		if ($default != '\'\'')
-			$builder->emitCode('else echo htmlspecialchars(' . $default . ', ENT_COMPAT, "UTF-8");', $token);
 	}
 
 	public function tpl_element(Builder $builder, $type, array $attributes, Token $token)
