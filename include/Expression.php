@@ -127,11 +127,16 @@ class Expression
 
 	protected function getCode()
 	{
-		// The raw filter is a special case.
+		// The raw and escape filters are special cases.
 		if (array_key_exists('raw', $this->filters))
 		{
 			$this->escape = false;
 			unset($this->filters['raw']);
+		}
+		else if (array_key_exists('escape', $this->filters))
+		{
+			$this->escape = true;
+			unset($this->filters['escape']);
 		}
 
 		// Add the filters, if there are any
