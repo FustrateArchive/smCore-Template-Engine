@@ -32,14 +32,14 @@ This is a template processing system built with these primary features in mind:
 ## First steps
 
 It's a great idea to take a look at the documentation, especially the ones named
-[Quick Start](./docs/00 - Quick Start.md) and [Element Reference](./docs/02 - Element Reference.md). The samples are good too.
+Quick Start and Element Reference. The samples are good too.
 
 ## Supported PHP versions
 
 The smCore Template Engine has been tested on and fully supports the following
 PHP versions:
 
-	5.3.0 - 5.3.9
+- 5.3.0 - 5.3.9
 
 It has also been tested on a 2011-04-30 snapshot of PHP 6, and is believed to
 be forwards-compatible. Versions prior to 5.3.0 are not supported.
