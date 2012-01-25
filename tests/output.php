@@ -348,9 +348,18 @@ function test_output_044($harness)
 {
 	$harness->expectOutput('1 &amp; 2');
 	$harness->addData('
-		<tpl:template name="my:output"><my:output2 param="1 &amp; 2" /></tpl:template>
+		<tpl:template name="my:output"><my:output2 param="1 & 2" /></tpl:template>
 		<tpl:template name="my:output2">{$param}</tpl:template>');
 }
+
+
+
+
+
+
+
+
+
 
 function test_output_045($harness)
 {
@@ -389,19 +398,19 @@ function test_output_escape_004($harness)
 
 function test_output_escape_005($harness)
 {
-	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape));
+	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape, ENT_COMPAT, "UTF-8"));
 	$harness->addData('<tpl:container doctype="xhtml"><tpl:template name="my:output">{ToxgTestHarness::$to_escape}</tpl:template></tpl:container>');
 }
 
 function test_output_escape_006($harness)
 {
-	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape));
+	$harness->expectOutput(htmlspecialchars(ToxgTestHarness::$to_escape, ENT_COMPAT, "UTF-8"));
 	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output">{ToxgTestHarness::$to_escape}</tpl:template></tpl:container>');
 }
 
 function test_output_escape_007($harness)
 {
-	$harness->expectOutput('<script>' . htmlspecialchars(ToxgTestHarness::$to_escape) . '</script>');
+	$harness->expectOutput('<script>' . htmlspecialchars(ToxgTestHarness::$to_escape, ENT_COMPAT, "UTF-8") . '</script>');
 	$harness->addData('<tpl:container doctype="xhtml"><tpl:template name="my:output"><script>{ToxgTestHarness::$to_escape}</script></tpl:template></tpl:container>');
 }
 
@@ -419,6 +428,6 @@ function test_output_escape_009($harness)
 
 function test_output_escape_010($harness)
 {
-	$harness->expectOutput('<script></script>' . htmlspecialchars(ToxgTestHarness::$to_escape) . '<script></script>');
+	$harness->expectOutput('<script></script>' . htmlspecialchars(ToxgTestHarness::$to_escape, ENT_COMPAT, "UTF-8") . '<script></script>');
 	$harness->addData('<tpl:container doctype="html"><tpl:template name="my:output"><script></script>{ToxgTestHarness::$to_escape}<script></script></tpl:template></tpl:container>');
 }

@@ -18,7 +18,6 @@
  *
  *   - var-ref:       A reference to a variable. ({$x})
  *   - lang-ref:      A reference to a language string. ({#x})
- *   - format-ref:    A reference to a formatter. ({%x})
  *   - tag-start:     A start tag. ({tpl:if} or <tpl:if>)
  *   - tag-empty:     An empty tag. (<tpl:if />)
  *   - tag-end:       An end tag. (</tpl:if>)
@@ -135,11 +134,11 @@ class Source
 
 		// We may have a stream, an array of already-parsed tokens, or a string.
 		if (is_resource($this->data))
-			return $this->readStreamToken();
+			return $this->_readStreamToken();
 		elseif (is_array($this->data))
-			return $this->readArrayToken();
+			return $this->_readArrayToken();
 		else
-			return $this->readStringToken();
+			return $this->_readStringToken();
 	}
 
 	public function isDataEOF()
@@ -160,7 +159,7 @@ class Source
 		return true;
 	}
 
-	protected function readStreamToken()
+	protected function _readStreamToken()
 	{
 		// Extend the buffer when it gets too small.  We won't allow an element longer than 2048 bytes.
 		if (strlen($this->data_buffer) - $this->data_pos < self::MAX_TAG_LENGTH)
@@ -172,10 +171,10 @@ class Source
 		if (strlen($this->data_buffer) == 0)
 			return false;
 
-		return $this->readStringToken();
+		return $this->_readStringToken();
 	}
 
-	protected function readArrayToken()
+	protected function _readArrayToken()
 	{
 		if ($this->data_pos >= count($this->data))
 			return false;
@@ -183,72 +182,72 @@ class Source
 		return $this->data[$this->data_pos++];
 	}
 
-	protected function readStringToken()
+	protected function _readStringToken()
 	{
 		if ($this->wait_comment !== false)
-			return $this->readComment();
+			return $this->_readComment();
 
 		switch ($this->data_buffer[$this->data_pos])
 		{
 		case '<':
-			return $this->readTagToken();
+			return $this->_readTagToken();
 
 		case '{':
-			return $this->readCurlyToken();
+			return $this->_readCurlyToken();
 
 		case ']':
-			if ($this->firstPosOf(']]>') === $this->data_pos)
-				return $this->makeToken('cdata-end', strlen(']]>'));
+			if ($this->_firstPosOf(']]>') === $this->data_pos)
+				return $this->_makeToken('cdata-end', strlen(']]>'));
 
 			// Intentional fall-through, anything else after ] is fine.
 
 		default:
-			return $this->readContent();
+			return $this->_readContent();
 		}
 	}
 
-	protected function readComment()
+	protected function _readComment()
 	{
-		if ($this->firstPosOf('--->') === $this->data_pos)
+		if ($this->_firstPosOf('--->') === $this->data_pos)
 		{
 			$this->wait_comment = false;
-			return $this->makeToken('comment-end', strlen('--->'));
+			return $this->_makeToken('comment-end', strlen('--->'));
 		}
 
 		// Find the next interesting character.
-		$next_pos = $this->firstPosOf('--->');
+		$next_pos = $this->_firstPosOf('--->');
 		if ($next_pos === false)
 			$next_pos = strlen($this->data_buffer);
 
-		return $this->makeToken('comment', $next_pos - $this->data_pos);
+		return $this->_makeToken('comment', $next_pos - $this->data_pos);
 	}
 
-	protected function readContent($offset = 0)
+	protected function _readContent($offset = 0)
 	{
 		// Find the next interesting character.
-		$next_pos = $this->firstPosOf(array('<', '{', ']]>'), $offset);
+		$next_pos = $this->_firstPosOf(array('<', '{', ']]>'), $offset);
 		if ($next_pos === false)
 			$next_pos = strlen($this->data_buffer);
 
-		return $this->makeToken('content', $next_pos - $this->data_pos);
+		return $this->_makeToken('content', $next_pos - $this->data_pos);
 	}
 
-	protected function readTagToken()
+	protected function _readTagToken()
 	{
 		// CDATA sections toggle escaping.
-		if ($this->firstPosOf('<![CDATA[') === $this->data_pos)
-			return $this->makeToken('cdata-start', strlen('<![CDATA['));
+		if ($this->_firstPosOf('<![CDATA[') === $this->data_pos)
+			return $this->_makeToken('cdata-start', strlen('<![CDATA['));
 
 		// Comments can comment out commands, which won't get processed.
-		if ($this->firstPosOf('<!---') === $this->data_pos)
+		if ($this->_firstPosOf('<!---') === $this->data_pos)
 		{
 			// This tells us to do nothing until a --->.
 			$this->wait_comment = $this->line;
-			return $this->makeToken('comment-start', strlen('<!---'));
+			return $this->_makeToken('comment-start', strlen('<!---'));
 		}
 
 		// Must be namespaced or not interesting, so bail early if obviously not.
-		$ns_mark = $this->firstPosOf(':', 1);
+		$ns_mark = $this->_firstPosOf(':', 1);
 		if ($ns_mark !== false)
 		{
 			$ns = substr($this->data_buffer, $this->data_pos + 1, $ns_mark - $this->data_pos - 1);
@@ -265,31 +264,29 @@ class Source
 
 		// Okay, then, the namespace was found invalid so just treat it as content.
 		if ($ns === false)
-			return $this->readContent(1);
+			return $this->_readContent(1);
 
-		return $this->readGenericTag('tag', '<', '>', 1 + strlen($ns) + 1);
+		return $this->_readGenericTag('tag', '<', '>', 1 + strlen($ns) + 1);
 	}
 
-	protected function readCurlyToken()
+	protected function _readCurlyToken()
 	{
 		// Make sure it's something interesting and we're not wasting our time...
 		if (strlen($this->data_buffer) <= $this->data_pos + 1)
-			return $this->readContent(1);
+			return $this->_readContent(1);
 		$next_c = $this->data_buffer[$this->data_pos + 1];
 
-		// We support {$var}, {#lang}, {%format:something}, and {tpl:stuff /}.
+		// We support {$var}, {#lang}, and {tpl:stuff /}.
 		if ($next_c === '$')
 			$type = 'var-ref';
 		elseif ($next_c === '#')
 			$type = 'lang-ref';
-		elseif ($next_c === '%')
-			$type = 'format-ref';
 		else
 		{
 			// Could still be a var-ref in form CLASS::constant or CLASS::value.
 			$type = 'tag';
 
-			$ns_mark = $this->firstPosOf(':', 1);
+			$ns_mark = $this->_firstPosOf(':', 1);
 			if ($ns_mark !== false)
 			{
 				$ns = substr($this->data_buffer, $this->data_pos + 1, $ns_mark - $this->data_pos - 1);
@@ -319,14 +316,14 @@ class Source
 
 			// Otherwise this may be CSS/JS/something we don't want to munge.
 			if ($ns === false && $type === 'tag')
-				return $this->readContent(1);
+				return $this->_readContent(1);
 		}
 
 		// Now it's time to parse a tag, lang, or var.
-		return $this->readGenericTag($type, '{', '}', 1);
+		return $this->_readGenericTag($type, '{', '}', 1);
 	}
 
-	protected function readGenericTag($type, $nest_c, $end_c, $offset)
+	protected function _readGenericTag($type, $nest_c, $end_c, $offset)
 	{
 		// Now it's time to parse a tag.  Start after any namespace/</etc. we already found.
 		$end_pos = $this->data_pos + $offset;
@@ -390,15 +387,15 @@ class Source
 				$type = 'tag-start';
 		}
 
-		return $this->makeToken($type, $end_pos - $this->data_pos);
+		return $this->_makeToken($type, $end_pos - $this->data_pos);
 	}
 
-	protected function makeToken($type, $chars)
+	protected function _makeToken($type, $chars)
 	{
 		$data = substr($this->data_buffer, $this->data_pos, $chars);
 		$this->data_pos += $chars;
 
-		$tok = $this->makeTokenObject(array(
+		$tok = $this->_makeTokenObject(array(
 			'file' => $this->file,
 			'line' => $this->line,
 			'type' => $type,
@@ -411,7 +408,7 @@ class Source
 		{
 			// Backpeddle....
 			$this->data_pos -= $chars;
-			return $this->makeToken('content', 1);
+			return $this->_makeToken('content', 1);
 		}
 
 		// Count the tabs at the end, because we're magic like that
@@ -422,12 +419,12 @@ class Source
 		return $tok;
 	}
 
-	protected function makeTokenObject($info)
+	protected function _makeTokenObject($info)
 	{
 		return new Token($info, $this);
 	}
 
-	protected function firstPosOf($find, $offset = 0)
+	protected function _firstPosOf($find, $offset = 0)
 	{
 		$least = false;
 

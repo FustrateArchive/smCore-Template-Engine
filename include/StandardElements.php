@@ -39,7 +39,7 @@ class StandardElements
 		if ($token->type != 'tag-empty')
 			$token->toss('invalid tag type');
 
-		$this->requireAttributes(array('name'), $attributes, $token);
+		$this->_requireAttributes(array('name'), $attributes, $token);
 
 		list ($ns, $name) = explode(':', $attributes['name']);
 
@@ -67,11 +67,11 @@ class StandardElements
 				$attributes[] = $k . ' => ' . Expression::stringWithVars(html_entity_decode($v), $token);
 			}
 
-		$this->tpl_call_emitFunc($func_above, $builder, $attributes, true, $token);
-		$this->tpl_call_emitFunc($func_below, $builder, $attributes, false, $token);
+		$this->_tpl_call_emitFunc($func_above, $builder, $attributes, true, $token);
+		$this->_tpl_call_emitFunc($func_below, $builder, $attributes, false, $token);
 	}
 
-	protected function tpl_call_emitFunc($func_name, $builder, $attributes, $first, $token)
+	protected function _tpl_call_emitFunc($func_name, $builder, $attributes, $first, $token)
 	{
 		// Do we know for sure that it is defined?  If so, we can skip an if.
 		$builder->emitCode('if (function_exists('. $func_name . ')) {', $token);
@@ -92,21 +92,29 @@ class StandardElements
 	// Very useful for alternating backgrounds
 	public function tpl_cycle(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireAttributes(array('values', 'name'), $attributes, $token);
+		$this->_requireAttributes(array('values'), $attributes, $token);
 
-		// Not sure if we really even need to pre-build these variables anymore
-		$name = Expression::makeVarName($attributes['name']);
+		// When there's an "as" attribute, we don't automatically output, just set the variable
+		if (!empty($attributes['as']))
+		{
+			$as = $builder->parseExpression('variableNotLang', $attributes['as'], $token);
 
-		if (empty($name))
-			$token->toss('untranslated', 'Invalid cycle name.');
+			// We need a simple representation to append to a variable name
+			$varName = Expression::makeVarName($as);
+		}
+		else
+		{
+			// We'll have to make up something on the fly, I guess.
+			$varName = substr(md5(microtime(true)), 0, 16);
+		}
 
-		$cycle_array = '$__toxg_cycle_' . $name;
-		$cycle_counter = '$__toxg_cycle_counter_' . $name;
+		$cycle_array = '$__toxg_cycle_' . $varName;
+		$cycle_counter = '$__toxg_cycle_counter_' . $varName;
 
-		$values = explode(',', $attributes['values']);
+		$values = Expression::splitExpressions($attributes['values'], 'stringWithVars', ',', $token);
 
 		if (empty($values))
-			$token->toss('untranslated', 'Cannot cycle through an empty array.');
+			$token->toss('tpl_cycle_values_empty');
 
 		foreach ($values as $k => $val)
 			$values[$k] = Expression::stringWithVars($val, $token);
@@ -117,9 +125,10 @@ class StandardElements
 
 	public function tpl_element(Builder $builder, $type, array $attributes, Token $token)
 	{
-		// We don't use requireAttributes() because we are using the ns.
+		// We don't use _requireAttributes() because we are using the ns.
 		if (empty($attributes[Template::TPL_NAMESPACE . ':name']))
 			$token->toss('generic_tpl_empty_attr', 'tpl:name', $token->prettyName());
+
 		$name = $builder->parseExpression('stringWithVars', $attributes[Template::TPL_NAMESPACE . ':name'], $token);
 
 		if (isset($attributes[Template::TPL_NAMESPACE . ':inherit']))
@@ -165,7 +174,7 @@ class StandardElements
 
 	public function tpl_else(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireEmpty($token);
+		$this->_requireEmpty($token);
 
 		if (!empty($attributes['default']))
 			$attributes['test'] = $token->attributes['default'];
@@ -181,27 +190,18 @@ class StandardElements
 
 	public function tpl_flush(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireEmpty($token);
+		$this->_requireEmpty($token);
 
 		$builder->emitCode('ob_flush(); flush();', $token);
 	}
 
 	public function tpl_for(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$init = '';
-		$while = '';
-		$modify = '';
+		$init = $this->_defaultAttribute('init', '', $attributes, 'boolean', $builder, $token);
+		$while = $this->_defaultAttribute('while', '', $attributes, 'boolean', $builder, $token);
+		$modify = $this->_defaultAttribute('modify', '', $attributes, 'normal', $builder, $token);
 
-		if (!empty($attributes['init']))
-			$init = Expression::normal($attributes['init'], $token);
-
-		if (!empty($attributes['while']))
-			$while = Expression::boolean($attributes['while'], $token);
-
-		if (!empty($attributes['modify']))
-			$modify = Expression::normal($attributes['modify'], $token);
-
-		// If there's no parens or $'s in it, it can't be for-able.
+		// We don't allow "for (;;)" you should use a while instead.
 		if (empty($init) && empty($while) && empty($modify))
 			$token->toss('tpl_for_no_params');
 
@@ -215,13 +215,10 @@ class StandardElements
 
 	public function tpl_foreach(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireNotEmpty($token);
-		$this->requireAttributes(array('from', 'as'), $attributes, $token);
+		$this->_requireNotEmpty($token);
+		$this->_requireAttributes(array('from', 'as'), $attributes, $token);
 
-		$counter = null;
-
-		if (!empty($attributes['counter']))
-			$counter = $builder->parseExpression('variableNotLang', $attributes['counter'], $token);
+		$counter = $this->_defaultAttribute('counter', null, $attributes, 'variableNotLang', $builder, $token);
 
 		if ($type === 'tag-start')
 		{
@@ -251,13 +248,14 @@ class StandardElements
 
 	public function tpl_if(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireNotEmpty($token);
+		$this->_requireNotEmpty($token);
+
 		if (!empty($attributes['default']))
 		{
 			$attributes['test'] = $token->attributes['default'];
 			$token->attributes['test'] = $token->attributes['default'];
 		}
-		$this->requireAttributes(array('test'), $attributes, $token);
+		$this->_requireAttributes(array('test'), $attributes, $token);
 
 		if ($type === 'tag-start')
 		{
@@ -272,20 +270,19 @@ class StandardElements
 
 	public function tpl_output(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireEmpty($token);
-		$this->requireAttributes(array('value'), $attributes, $token);
+		$this->_requireEmpty($token);
+		$this->_requireAttributes(array('value'), $attributes, $token);
 
-		// @todo: Make this a parseExpression('boolean', ...) to allow for real booleans
 		$escape = empty($attributes['escape']) || $attributes['escape'] !== 'false';
 
-		$expr = $builder->parseExpression('normal', $attributes['value'], $token, $escape);
+		$expr = Expression::normal($attributes['value'], $token, $escape);
 
 		$builder->emitOutputParam('(' . $expr . ')', $token);
 	}
 
 	public function tpl_set(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireAttributes(array('var'), $attributes, $token);
+		$this->_requireAttributes(array('var'), $attributes, $token);
 
 		if (empty($attributes['append']))
 			$attributes['append'] = false;
@@ -302,17 +299,16 @@ class StandardElements
 			$builder->emitCode($var . ' ' . ($attributes['append'] ? '.' : '') . '= ob_get_contents(); ob_end_clean();');
 		else
 		{
-			$this->requireAttributes(array('value'), $attributes, $token);
+			$this->_requireAttributes(array('value'), $attributes, $token);
 
 			$value = $builder->parseExpression('normal', $attributes['value'], $token);
-			$this->requireAttributes(array('value'), $attributes, $token);
 			$builder->emitCode($var . ' ' . ($attributes['append'] ? '.' : '') . '= ' . $value . ';', $token);
 		}
 	}
 
 	public function tpl_template_push(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireEmpty($token);
+		$this->_requireEmpty($token);
 
 		$args = array();
 		$save = array();
@@ -336,7 +332,7 @@ class StandardElements
 
 	public function tpl_template_pop(Builder $builder, $type, array $attributes, Token $token)
 	{
-		$this->requireEmpty($token);
+		$this->_requireEmpty($token);
 		if ($this->template_push_level <= 0)
 			$token->toss('tpl_template_pop_without_push');
 
@@ -347,19 +343,19 @@ class StandardElements
 		$this->template_push_level--;
 	}
 
-	protected function requireEmpty(Token $token)
+	protected function _requireEmpty(Token $token)
 	{
 		if ($token->type !== 'tag-empty')
 			$token->toss('generic_tpl_must_be_empty', $token->prettyName());
 	}
 
-	protected function requireNotEmpty(Token $token)
+	protected function _requireNotEmpty(Token $token)
 	{
 		if ($token->type === 'tag-empty')
 			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());
 	}
 
-	protected function requireAttributes(array $reqs, array $attributes, Token $token)
+	protected function _requireAttributes(array $reqs, array $attributes, Token $token)
 	{
 		if ($token->type === 'tag-end')
 			return;
@@ -369,5 +365,13 @@ class StandardElements
 			if (!isset($attributes[$req]))
 				$token->toss('generic_tpl_missing_required', $req, $token->prettyName(), implode(', ', $reqs));
 		}
+	}
+
+	protected function _defaultAttribute($name, $default, array $attributes, $type, Builder $builder, Token $token)
+	{
+		if (empty($attributes[$name]))
+			return $default;
+
+		return $builder->parseExpression($type, $attributes[$name], $token);
 	}
 }

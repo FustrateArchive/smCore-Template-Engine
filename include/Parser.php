@@ -131,7 +131,6 @@ class Parser
 		case 'var-ref':
 		case 'lang-ref':
 		case 'output-ref':
-		case 'format-ref':
 			$this->parseRef($token);
 			break;
 
@@ -222,7 +221,7 @@ class Parser
 		$token->ns = 'tpl';
 		$token->nsuri = Template::TPL_NAMESPACE;
 		$token->attributes['value'] = $token->data;
-		$token->attributes['escape'] = $this->inside_cdata !== false ? 'false' : 'true';
+		$token->attributes['escape'] = $this->inside_cdata ? 'false' : 'true';
 
 		$this->parseTag($token);
 	}
@@ -254,8 +253,6 @@ class Parser
 				$this->handleTagContent($token);
 			elseif ($token->name === 'output')
 				$this->handleTagOutput($token);
-			elseif ($token->name === 'json')
-				$this->handleTagJSON($token);
 			elseif ($token->name === 'alter')
 				$this->handleTagAlter($token);
 		}
@@ -447,19 +444,7 @@ class Parser
 
 		// Default the escape parameter just like {$x} does.
 		if (!isset($token->attributes['escape']))
-			$token->attributes['escape'] = $this->inside_cdata !== false ? 'false' : 'true';
-	}
-
-	protected function handleTagJSON(Token $token)
-	{
-		if ($token->type === 'tag-start')
-			$token->toss('tpl_json_must_be_empty');
-		if (!isset($token->attributes['value']))
-			$token->toss('generic_tpl_missing_required', 'value', $token->prettyName(), 'value');
-
-		// Default the escape parameter just like {$x} does.
-		if (!isset($token->attributes['escape']))
-			$token->attributes['escape'] = $this->inside_cdata !== false ? 'false' : 'true';
+			$token->attributes['escape'] = $this->inside_cdata ? 'false' : 'true';
 	}
 
 	protected function handleTagAlter(Token $token)

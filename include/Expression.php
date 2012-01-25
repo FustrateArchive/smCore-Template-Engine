@@ -33,7 +33,7 @@ class Expression
 	{
 		// Filters can have whitespace before them, so remove it. Makes reading easier when they're not there.
 		$this->data = preg_replace('~\s+\|~', '|', $data);
-		$this->data_len = strlen($this->data);
+		$this->data_len = mb_strlen($this->data);
 		$this->token = $token;
 		$this->escape = $escape !== false;
 	}
@@ -42,7 +42,7 @@ class Expression
 	{
 		// An empty string, let's short-circuit this common case.
 		if ($this->data_len === 0)
-			$this->expr .= '\'\'';
+			return '\'\'';
 
 		while ($this->data_pos < $this->data_len)
 		{
@@ -72,7 +72,7 @@ class Expression
 		if ($this->data_len === 0 || $this->data[$this->data_pos] !== '{')
 			$this->toss('expression_expected_var');
 
-		$this->expr .= $this->readReference($allow_lang);
+		$this->expr = $this->readReference($allow_lang);
 
 		$this->eatWhite();
 
@@ -84,11 +84,13 @@ class Expression
 		return $this->getCode();
 	}
 
-	public function parseNormal($accept_raw = false)
+	public function parseNormal($escape = false)
 	{
 		// An empty string, let's short-circuit this common case.
 		if ($this->data_len === 0)
 			$this->toss('expression_empty');
+
+		$this->escape = (boolean) $escape;
 
 		while ($this->data_pos < $this->data_len)
 		{
@@ -106,10 +108,7 @@ class Expression
 
 		$this->validate();
 
-		if (!$this->escape && $accept_raw)
-			return array($this->getCode(), true);
-		else
-			return $this->getCode();
+		return $this->getCode();
 	}
 
 	public function validate()
@@ -122,7 +121,7 @@ class Expression
 		$attempt = @eval('if(0){return (' . $this->expr . ');}');
 
 		if ($attempt === false)
-			$this->toss('expression_validation_error');
+			$this->toss('expression_validation_error', array($this->expr));
 	}
 
 	protected function getCode()
@@ -359,7 +358,7 @@ class Expression
 
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '}', '|'), 1);
+			$next = $this->firstPosOf(array('[', '.', ']', '}', '|', ':'), 1);
 
 			if ($next === false)
 				$next = $this->data_len;
@@ -395,6 +394,11 @@ class Expression
 				}
 
 				$brackets--;
+			}
+			else if ($c === ':')
+			{
+				// We're going to be greedy, now that we're pretty much starting a whole new expression.
+				$params[] = $this->readVarPart($next, false, true); 
 			}
 			else if ($c === '}')
 			{
@@ -474,7 +478,7 @@ class Expression
 	{
 		// If we're being greedy, don't stop at indexes.
 		if ($greedy)
-			$end = $this->firstPosOf(array(',', '|', ')', '}'), 1);
+			$end = $this->firstPosOf(array(',', '|', ')', '}', ':'), 1);
 
 		$c = $this->data[$this->data_pos];
 
@@ -482,7 +486,7 @@ class Expression
 		if ($c === '$' || $c === '#')
 		{
 			$expr = mb_substr($this->data, $this->data_pos, $end - $this->data_pos);
-			$this->data_pos += strlen($expr);
+			$this->data_pos += mb_strlen($expr);
 
 			return self::variable('{' . $expr . '}', $this->token);
 
@@ -540,7 +544,7 @@ class Expression
 				$value = mb_substr($value, 1, -1);
 
 			// Did we split inside a string literal? Try to find the rest
-			else if ($value[0] !== mb_substr($value, -1) || strlen($value) === 1)
+			else if ($value[0] !== mb_substr($value, -1) || mb_strlen($value) === 1)
 			{
 				$next = $this->firstPosOf(array($value[0]));
 				$value = mb_substr($value, 1) . $this->eatUntil($next);
@@ -566,9 +570,9 @@ class Expression
 		return $this->eatUntil($pos);
 	}
 
-	protected function toss($error)
+	protected function toss($error, $params = array())
 	{
-		$this->token->toss('expression_invalid_meta', $this->data, Exception::format($error, array()));
+		$this->token->toss('expression_invalid_meta', $this->data, Exception::format($error, $params));
 	}
 
 	protected function eatWhite()
@@ -634,8 +638,60 @@ class Expression
 
 	public static function boolean($string, Token $token, $escape = false)
 	{
-		$expr = new self($string, $token, $escape);
+		$expr = new self($string, $token);
 		return $expr->parseNormal($escape);
+	}
+
+	// Splits the $string by the $delimiter, and tries it as a $type (one of the functions above)
+	public static function splitExpressions($string, $type, $delimiter, $token)
+	{
+		if (empty($string))
+			return array();
+
+		// We're going to split by the delimiter, and then if something is off, we'll merge some things back together
+		$parts = explode($delimiter, $string);
+
+		// Our ready-to-go expressions
+		$expressions = array();
+
+		// @todo: clean this up
+
+		$broken = false;
+		$index = 0;
+
+		while ($index < count($parts))
+		{
+			if ($broken)
+			{
+				// Put the delimiter back and append the next part
+				$built .= $delimiter . $parts[$index++];
+			}
+			else
+				$built = $parts[$index++];
+
+			// If it doesn't work, merge it with the next one and try again
+			try
+			{
+				$expr = self::$type(trim($built), $token);
+
+				// Exception would be thrown above, so if we get here we're good to go.
+				$expressions[] = $expr;
+
+				$broken = false;
+				$built = '';
+			}
+			catch (Exception $e)
+			{
+				// Do nothing with the exception, we'll try again.
+				$broken = true;
+			}
+		}
+
+		// If we were still trying to build something at the end, something's wrong
+		if ($broken)
+		{
+			die('Error');
+		}
 	}
 
 	public static function makeVarName($name)
@@ -646,25 +702,5 @@ class Expression
 	public static function makeTemplateName($nsuri, $name)
 	{
 		return 'tpl_' . md5($nsuri) . '_' . self::makeVarName($name);
-	}
-
-	/**
-	 * I wasn't completely sure where to put this
-	 * Recursively htmlspecialchar's a string or array
-	 *
-	 * @static
-	 * @access public
-	 * @param mixed $value The value to htmlspecialchar
-	 * @return mixed
-	 */
-	public static function htmlspecialchars($value)
-	{
-		if (is_array($value))
-			foreach ($value as $k => $v)
-				$value[$k] = self::htmlspecialchars($v);
-		else
-			$value = htmlspecialchars($value, ENT_COMPAT, 'UTF-8');
-
-		return $value;
 	}
 }

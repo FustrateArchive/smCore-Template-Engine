@@ -73,7 +73,7 @@ class ToxgTests
 		<tr class="', $result[1] ? 'passed' : 'failed', '">
 			<td>', $result[0], '</td>
 			<td class="center">', ($result[1] ? 'Yes' : 'No'), '</td>
-			<td>', $result[2], '</td>
+			<td>', $result[1] ? htmlspecialchars($result[2]) : $result[2], '</td>
 			<td>', round($result[3], 5), '</td>
 		</tr>';
 

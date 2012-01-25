@@ -110,7 +110,7 @@ class ToxgTestHarness extends smCore\TemplateEngine\Template
 		if ($this->expect_output !== null)
 		{
 			require($cache_file);
-			$this->testOutput($my_ns);
+			return $this->testOutput($my_ns);
 		}
 	}
 
@@ -138,7 +138,11 @@ class ToxgTestHarness extends smCore\TemplateEngine\Template
 			throw new Exception('Expecting a failure during output.');
 
 		if ($this->expect_output != ($this->expect_output_trim ? trim(preg_replace('~\s+~', ' ', $actual)) : $actual))
-			throw new Exception('Output did not match expected.');
+		{
+			throw new Exception('Output did not match expected. Expected: <tt>' . htmlspecialchars($this->expect_output) . '</tt>, but received: <tt>' . htmlspecialchars($actual) . '</tt>');
+		}
+
+		return $actual;
 	}
 
 	protected function testOutputExecute($my_ns)

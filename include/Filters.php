@@ -4,25 +4,35 @@ namespace smCore\TemplateEngine;
 
 class Filters
 {
-	protected static function requireParams($num, $params)
+	protected static $_defaults = array(
+		'date_format' => 'F j, Y, h:i:s A',
+		'time_format' => 'h:i:s A',
+		'money_format' => '',
+	);
+
+	// @todo: improve this, it's ugly. Also throw an exception.
+	protected static function _requireParams($num, $params)
 	{
 		if (count($params) < $num)
-			return false; // @todo: throw an exception
+			return false;
+	}
+
+	public static function setDefaults(array $defaults)
+	{
 	}
 
 	public static function filter($value, $filters)
 	{
-		// @todo: required number of params for each filter
 		foreach ($filters as $type => $params)
 		{
 			if ($type === 'contains')
 			{
-				self::requireParams(1, $params);
+				self::_requireParams(1, $params);
 
 				if (is_string($value))
 				{
 					// Cast to a string so it doesn't try it as an int
-					$value = strpos($value, (string) $param[0]) > -1;
+					$value = strpos($value, (string) $params[0]) !== false;
 				}
 				else if (is_array($value))
 				{
@@ -31,21 +41,20 @@ class Filters
 			}
 			else if ($type === 'date')
 			{
-				// @todo: make this a setting or use smCore's default
-				$value = date(!empty($params[0]) ? $params[0] : 'n/j/Y @ g:i:s A'), $value);
+				$value = date(!empty($params[0]) ? $params[0] : self::$_defaults['date_format'], $value);
 			}
 			else if ($type === 'default')
 			{
-				self::requireParams(1, $params);
+				self::_requireParams(1, $params);
 
 				if (empty($value))
 					$value = $params[0];
 			}
 			else if ($type === 'divisibleby')
 			{
-				self::requireParams(1, $params);
+				self::_requireParams(1, $params);
 
-				$value = ($value % $params[0]) === 0;
+				$value = ($value % (int) $params[0]) === 0;
 			}
 			else if ($type === 'empty')
 			{
@@ -61,7 +70,7 @@ class Filters
 			}
 			else if ($type === 'join')
 			{
-				self::requireParams(1, $params);
+				self::_requireParams(1, $params);
 
 				$value = implode($params[0], (array) $value);
 			}
@@ -111,6 +120,7 @@ class Filters
 			}
 			else if ($type === 'time')
 			{
+				$value = date(!empty($params[0]) ? $params[0] : self::$_defaults['time_format'], $value);
 			}
 			else if ($type === 'trim')
 			{
@@ -118,7 +128,7 @@ class Filters
 			}
 			else if ($type === 'truncate')
 			{
-				self::requireParams(1, $params);
+				self::_requireParams(1, $params);
 
 				$params[0] = (int) $params[0];
 

@@ -35,7 +35,7 @@ In most cases, expressions with filters might look like the following:
 On the code level, filters are passed the current value of the reference (a variable
 or language string), and return a modified version of that value.
 
-## Default Filters - WIP
+## Default Filters
 
 ### contains
 If the variable is an array, returns true if the parameter is in the array.
