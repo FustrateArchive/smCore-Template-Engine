@@ -96,7 +96,7 @@ class Theme
 		$this->inside[] = array($name, $namespace);
 	}
 
-	public function resetTemplates($name)
+	public function resetTemplates()
 	{
 		$this->inside = array();
 	}
