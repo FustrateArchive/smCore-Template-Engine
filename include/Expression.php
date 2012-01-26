@@ -537,20 +537,23 @@ class Expression
 		if (empty($value))
 			return '\'\'';
 
+		// Are we inside a string?
 		if ($value[0] === '"' || $value[0] === '\'')
 		{
-			// If it's already in quotation marks, take them out
-			if ($value[0] === mb_substr($value, -1))
-				$value = mb_substr($value, 1, -1);
-
 			// Did we split inside a string literal? Try to find the rest
-			else if ($value[0] !== mb_substr($value, -1) || mb_strlen($value) === 1)
+			if (mb_strlen($value) === 1 || $value[0] !== mb_substr($value, -1))
 			{
-				$next = $this->firstPosOf(array($value[0]));
+				$next = $this->firstPosOf(array($value[0]), 1);
+
 				$value = mb_substr($value, 1) . $this->eatUntil($next);
 
 				// Skip over the ending quotation mark.
 				$this->data_pos++;
+			}
+			else if ($value[0] === mb_substr($value, -1))
+			{
+				// If it's already in quotation marks, take them out
+				$value = mb_substr($value, 1, -1);
 			}
 		}
 

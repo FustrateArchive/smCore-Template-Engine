@@ -70,7 +70,8 @@ class Filters
 			}
 			else if ($type === 'join')
 			{
-				self::_requireParams(1, $params);
+				if (empty($params[0]))
+					$params[0] = '';
 
 				$value = implode($params[0], (array) $value);
 			}
@@ -107,6 +108,10 @@ class Filters
 			}
 			else if ($type === 'random')
 			{
+				if (empty($params[0]))
+				{
+					$value = $value[array_rand((array) $value)];
+				}
 			}
 			else if ($type === 'rtrim')
 			{
@@ -156,6 +161,7 @@ class Filters
 			}
 			else if ($type === 'wordcount')
 			{
+				$value = count(preg_split('/\s+/', $value));
 			}
 			else if ($type === 'wordwrap')
 			{
