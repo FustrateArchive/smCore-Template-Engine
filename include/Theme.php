@@ -31,7 +31,11 @@ class Theme
 
 	protected $_parsing_doctype = 'xhtml';
 
+	// Primary namespace definitions
 	protected static $_namespaces = array();
+
+	// Fallback namespaces can be overridden by primary definitions
+	protected static $_fallback_namespaces = array();
 
 	/**
 	 * Construct a new theme object
@@ -95,7 +99,7 @@ class Theme
 	 *
 	 * @access public
 	 */
-	public function addNamespace($name, $nsuri = null)
+	public function addNamespace($name, $nsuri = null, $primary = true)
 	{
 		self::$_namespaces[$name] = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
 	}
@@ -156,6 +160,21 @@ class Theme
 	public function resetLayers()
 	{
 		$this->_layers = array();
+	}
+
+	/**
+	 * 
+	 *
+	 * @param 
+	 * @return 
+	 * @access 
+	 */
+	public function addBlockListener($name, $callback)
+	{
+		if (!is_callable($callback))
+			throw new \Exception('theme_invalid_block_callback');
+
+		Compiler::addBlockListener($name, $callback);
 	}
 
 	/**

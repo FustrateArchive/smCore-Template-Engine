@@ -108,6 +108,9 @@ class Compiler
 	public function compileFirstPass()
 	{
 		$this->_parser->parse();
+
+		$templates = $this->_parser->getTemplatesDefined();
+		$blocks = $this->_parser->getBlocksDefined();
 	}
 
 	/**
@@ -116,6 +119,18 @@ class Compiler
 	 * @access public
 	 */
 	public function compileSecondPass()
+	{
+	}
+
+
+
+
+
+
+
+
+
+	public static function addBlockListener($name, $callback)
 	{
 	}
 }

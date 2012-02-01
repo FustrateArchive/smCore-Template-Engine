@@ -13,8 +13,6 @@ namespace smCore\TemplateEngine;
 
 class Template
 {
-	protected $_compiler = null;
-
 	/**
 	 * Create a new Template object.
 	 *
@@ -22,9 +20,8 @@ class Template
 	 * @return 
 	 * @access 
 	 */
-	public function __construct(Compiler $compiler)
+	public function __construct()
 	{
-		$this->_compiler = $compiler;
 	}
 
 	/**
@@ -34,9 +31,24 @@ class Template
 	 *
 	 * @access protected
 	 */
-	protected function _usesBlocks(array $blocks = array())
+	protected function _addBlockListeners(array $blocks = array())
 	{
-		$this->_compiler->registerUsingBlocks($this, $blocks);
+		foreach ($blocks as $block => $data)
+		{
+			if ($data[1] === 'above' || $data[1] === 'below')
+			{
+				Compiler::addBlockListeners($data[0], $data[1], array($this, 'block__' . $data[0] . '__' . $data[1]));
+			}
+			else if ($data[1] === 'both')
+			{
+				Compiler::addBlockListeners($data[0], 'above', array($this, 'block__' . $data[0] . '__above'));
+				Compiler::addBlockListeners($data[0], 'below', array($this, 'block__' . $data[0] . '__below'));
+			}
+			else if ($data[1] === 'replace')
+			{
+				Compiler::addBlockListeners($data[0], 'replace', array($this, 'block__' . $data[0]));
+			}
+		}
 	}
 
 	/**
@@ -48,7 +60,7 @@ class Template
 	 */
 	protected function _definesTemplates(array $templates = array())
 	{
-		$this->_compiler->registerTemplates($this, $templates);
+		Compiler::registerTemplates($this, $templates);
 	}
 
 	/**

@@ -564,4 +564,28 @@ class Parser
 	protected function _handleTagBlockEnd(Token $token)
 	{
 	}
+
+	/**
+	 * Returns the names of the templates that were defined in the source we parsed.
+	 *
+	 * @return array Template names, i.e. "site:box"
+	 *
+	 * @access public
+	 */
+	public function getTemplatesDefined()
+	{
+		return array_keys($this->_templates);
+	}
+
+	/**
+	 * Returns the names of the blocks that were defined in the source we parsed.
+	 *
+	 * @return array Block names, i.e. "site:head"
+	 *
+	 * @access public
+	 */
+	public function getBlocksDefined()
+	{
+		return array_keys($this->_blocks);
+	}
 }
