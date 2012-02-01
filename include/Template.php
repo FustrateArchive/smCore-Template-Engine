@@ -52,6 +52,20 @@ class Template
 	}
 
 	/**
+	 * Call a template from inside a template file
+	 *
+	 * @param string $name
+	 * @param string $side
+	 * @param array $__toxg_params
+	 *
+	 * @access protected
+	 */
+	protected function _callTemplate($name, $side, &$__toxg_params)
+	{
+		// @todo: the calling code
+	}
+
+	/**
 	 * Method to output the template's top part. Redefined in child classes.
 	 *
 	 * @param array $__toxg_params Array of )'var_name' => $value) to extract in the template

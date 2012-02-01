@@ -110,7 +110,7 @@ class Parser
 	 * Fire an event to the listeners, just in case they have something to say at this point.
 	 *
 	 * @param string $type Name of the event to fire
-	 * @param Token $token The token on which this event will be fired
+	 * @param smCore\TemplateEngine\Token $token The token on which this event will be fired
 	 *
 	 * @access protected
 	 */
@@ -173,7 +173,7 @@ class Parser
 	/**
 	 * Find special tokens and do thing with them.
 	 *
-	 * @param Token $token
+	 * @param smCore\TemplateEngine\Token $token
 	 *
 	 * @access protected
 	 */
@@ -225,7 +225,7 @@ class Parser
 	/**
 	 * Parse a content token (such as plain text or HTML)
 	 *
-	 * @param Token $token
+	 * @param smCore\TemplateEngine\Token $token
 	 *
 	 * @access protected
 	 */
@@ -257,7 +257,7 @@ class Parser
 	/**
 	 * Parse a reference token, such as a language or variable reference.
 	 *
-	 * @param Token $token
+	 * @param smCore\TemplateEngine\Token $token
 	 *
 	 * @access protected
 	 */
@@ -277,6 +277,14 @@ class Parser
 		$this->_parseTag($token);
 	}
 
+	/**
+	 * CDATA tells the parser to either escape references or not to, when in XHTML mode.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 * @param boolean $open True if opening CDATA, false if closing
+	 *
+	 * @access protected
+	 */
 	protected function _parseCDATA(Token $token, $open)
 	{
 		$this->_inside_cdata = $open;
@@ -285,9 +293,15 @@ class Parser
 		$this->_fire('parsedContent', $token);
 	}
 
+	/**
+	 * We do nothing with comments. Don't output a single thing.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _parseComment(Token $token)
 	{
-		// Do nothing.
 	}
 
 	protected function _parseTag(Token $token)
@@ -300,25 +314,18 @@ class Parser
 				$this->_handleTagBlock($token);
 			else if ($token->name === 'content')
 				$this->_handleTagContent($token);
-			else if ($token->name === 'option')
-				$this->_handleTagOption($token);
+			else if ($token->name === 'options')
+				$this->_handleTagOptions($token);
 			else if ($token->name === 'output')
 				$this->_handleTagOutput($token);
 			else if ($token->name === 'template')
 				$this->_handleTagTemplate($token);
 		}
-		// Before we fire the event, save the template vars (before alters insert data.)
-		else
-			$this->_handleTagCall($token, 'before');
 
 		if ($token->type === 'tag-start')
 			array_push($this->_tree, $token);
 
 		$this->_fire('parsedElement', $token);
-
-		// After we fire the event, for empty tags, we cleanup.
-		if ($token->nsuri !== Compiler::TPL_NSURI)
-			$this->_handleTagCall($token, 'after');
 	}
 
 	protected function _parseTagEnd(Token $token)
@@ -332,27 +339,28 @@ class Parser
 		if ($close_token->nsuri != $token->nsuri || $close_token->name !== $token->name)
 			$this->_wrongTagEnd($token, $close_token);
 
-		if ($token->nsuri !== Compiler::TPL_NSURI)
-			$this->_handleTagCall($token, 'before');
-
 		// This makes it easier, since they're on the same element after all.
 		$token->attributes = $close_token->attributes;
 		$this->_fire('parsedElement', $token);
 
-		// We might be exiting a template.  These can't be nested.
+		// We might be exiting a template. These can't be nested.
 		if ($token->nsuri == Compiler::TPL_NSURI)
 		{
 			if ($token->name === 'template')
 				$this->_handleTagTemplateEnd($token);
-			else if ($token->name === 'alter')
+			else if ($token->name === 'block')
 				$this->_handleTagBlockEnd($token);
 		}
-
-		// After we fire the event, we'll cleanup the call variables.
-		if ($token->nsuri !== Compiler::TPL_NSURI)
-			$this->_handleTagCall($token, 'after');
 	}
 
+	/**
+	 * Throw an exception when we encounter an ending tag that doesn't match what's open
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 * @param smCore\TemplateEngine\Token $expected
+	 *
+	 * @access 
+	 */
 	protected function _wrongTagEnd(Token $token, Token $expected)
 	{
 		// Special case this error since it's sorta common.
@@ -365,18 +373,21 @@ class Parser
 	/**
 	 * Set an option for parsing the rest of the file.
 	 *
-	 * @param Token $token
+	 * @param smCore\TemplateEngine\Token $token
 	 *
 	 * @access protected
 	 */
-	protected function _handleTagOption(Token $token)
+	protected function _handleTagOptions(Token $token)
 	{
+		if ($token->type !== 'tag-empty')
+			$token->toss('tpl_options_must_be_empty');
+
 		if (isset($token->attributes['doctype']))
 		{
 			if ($token->attributes['doctype'] === 'html' || $token->attributes['doctype'] === 'xhtml')
 				$this->_doctype = $token->attributes['doctype'];
 			else
-				$token->toss('tpl_option_invalid_doctype');
+				$token->toss('tpl_options_invalid_doctype');
 		}
 
 		if (isset($token->attributes['escape']))
@@ -384,10 +395,17 @@ class Parser
 			if ($token->attributes['escape'] === 'true' || $token->attributes['escape'] === 'false' || $token->attributes['escape'] === 'inherit')
 				$this->_escape = $token->attributes['escape'];
 			else
-				$token->toss('tpl_option_invalid_escape');
+				$token->toss('tpl_options_invalid_escape');
 		}
 	}
 
+	/**
+	 * Handle a <tpl:template> token, make sure it has everything we need.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _handleTagTemplate(Token $token)
 	{
 		if ($this->_state !== 'outside')
@@ -428,35 +446,16 @@ class Parser
 		$this->_state = 'template';
 	}
 
+	/**
+	 * Handle a </tpl:template> token, so it doesn't think we're nesting templates.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _handleTagTemplateEnd(Token $token)
 	{
 		$this->_state = 'outside';
-	}
-
-	protected function _handleTagCall(Token $token, $pos)
-	{
-		// If no attributes, we don't need to push/pop, save some cycles.
-		if (empty($token->attributes))
-			return;
-
-		// No reason if we're using tpl:inherit="*".
-		if (count($token->attributes) === 1 && isset($token->attributes[Compiler::TPL_NSURI . ':inherit']) && $token->attributes[Compiler::TPL_NSURI . ':inherit'] === '*')
-			return;
-
-		// Overlays and content should be able to reference the attributes in the call.
-		// Example: <some:example abc="123">{$abc}</some>
-		// Would be easier if content/alters applied to templates, but then they must be defined.
-		if ($token->type === 'tag-start' && $pos === 'before')
-			$type = 'template-push';
-		else if ($token->type === 'tag-end' && $pos === 'after')
-			$type = 'template-pop';
-		// Since we convert empty calls to start/end, we don't need to worry about tag-empty.
-		else
-			return;
-
-		// We want it to have the same file/line info, same attributes, etc.
-		$new_token = $token->createInject('tag-empty', false, $type, $token->attributes);
-		$this->insertSource($new_token, false);
 	}
 
 	protected function _handleTagContent(Token $token)
@@ -478,16 +477,11 @@ class Parser
 			$token->attributes['escape'] = $this->_inside_cdata ? 'false' : 'true';
 	}
 
-	protected function _handleTagAlter(Token $token)
+	protected function _handleTagBlock(Token $token)
 	{
-		if ($this->_state !== 'outside')
-			$token->toss('tpl_alter_inside_template');
-
-		$this->_state = 'alter';
 	}
 
-	protected function _handleTagAlterEnd(Token $token)
+	protected function _handleTagBlockEnd(Token $token)
 	{
-		$this->_state = 'outside';
 	}
 }

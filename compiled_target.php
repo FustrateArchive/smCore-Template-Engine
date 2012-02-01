@@ -6,11 +6,9 @@
 // extract() makes it so we can use the variables natively, $context['var'], as opposed to $__toxg_params['context']['var']
 // the final line of each function, compact(...) puts everything back into $__toxg_params so that the next portion of code can use it.
 
-namespace smCore\TemplateEngine;
-
 // In another file, we can have
 // class Templates__other_template_tpl extends Templates__home_fustrate_public_html_dev_toxg_templates_tpl
-class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends Template
+class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends smCore\TemplateEngine\Template
 {
 	public function __construct()
 	{
@@ -34,8 +32,49 @@ class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends Templa
 	{
 		extract($__toxg_params, EXTR_SKIP);
 
+		echo '<!DOCTYPE html>
+<html>
+	<head>';
+
+
 		echo '
-			Hello World!';
+		<title>Blocks: ';
+
+		if (!empty($context['nothing']))
+			echo $context['nothing'];
+		else
+			echo 'N/A';
+
+		echo '</title>';
+
+
+
+
+		echo '
+	</head>
+	<body>';
+
+
+
+
+		echo '
+		Hello World';
+
+		if (!empty($context['nums']))
+		{
+			foreach ($context['nums'] as $num)
+			{
+				$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array('__toxg_args', '__toxg_argstack', '__toxg_stack', '__toxg_params', '__toxg_func', '__toxg_error_handler')))
+				$this->_callTemplate('site:rounded', 'above', $__toxg_params);
+				extract($__toxg_params, EXTR_OVERWRITE);
+
+				echo $num;
+
+				$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array('__toxg_args', '__toxg_argstack', '__toxg_stack', '__toxg_params', '__toxg_func', '__toxg_error_handler')))
+				$this->_callTemplate('site:rounded', 'below', $__toxg_params);
+				extract($__toxg_params, EXTR_OVERWRITE);
+			}
+		}
 
 		$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array('__toxg_args', '__toxg_argstack', '__toxg_stack', '__toxg_params', '__toxg_func', '__toxg_error_handler')));
 	}

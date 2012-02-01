@@ -1,3 +1,4 @@
+<tpl:options doctype="html" /><!--- This line is removed. --->
 <!DOCTYPE html>
 <html>
 	<head><tpl:block name="site:head">

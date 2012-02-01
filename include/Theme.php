@@ -169,18 +169,6 @@ class Theme
 	}
 
 	/**
-	 * 
-	 *
-	 * @param 
-	 * @return 
-	 * @access 
-	 */
-	public function setParsingDoctype($type)
-	{
-		$this->_parsing_doctype = $type;
-	}
-
-	/**
 	 * Read, compile, and call all of the template files.
 	 *
 	 * @access public
