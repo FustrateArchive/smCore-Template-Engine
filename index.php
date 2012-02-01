@@ -2,6 +2,7 @@
 
 ini_set('display_errors', 1);
 
+// Dirty exception handler, to make things readable instead of throwing them all on one line.
 set_exception_handler(function($exception)
 {
 	echo '<h1>Exception Thrown</h1>
@@ -37,4 +38,5 @@ $theme = new testTheme(__DIR__, __DIR__, __DIR__ . '/other_theme', true);
 
 $theme->addNamespace('site', 'com.fustrate.site');
 $theme->loadTemplate('templates.tpl');
+$theme->loadTemplate('other_stuff.tpl');
 $theme->output();
