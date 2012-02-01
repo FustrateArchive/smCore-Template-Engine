@@ -72,14 +72,17 @@ class Builder
 
 		if ($extend_class_name === null)
 			$extend_class_name = 'smCore\TemplateEngine\Template';
-		else
-			$extend_class_name = 'Template__' . $extend_class_name;
 
 		$this->emitCode('<?php 
 
 
-class Template__' . $class_name . ' extends ' . $extend_class_name . '
-{');
+class ' . $class_name . ' extends ' . $extend_class_name . '
+{
+	public function __construct()
+	{
+		parent::__construct();
+
+	}');
 	}
 
 	protected function _finalize()

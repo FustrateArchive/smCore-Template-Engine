@@ -168,9 +168,10 @@ class TemplateList
 		foreach ($this->_templates as $template)
 		{
 			include_once($template['cache_file']);
-			$class_name = 'Template__' . $template['class_name'];
-			new $class_name($this);
+			new $template['class_name']($this);
 		}
+
+		die(var_dump(self::$_registered_templates));
 	}
 
 	/**

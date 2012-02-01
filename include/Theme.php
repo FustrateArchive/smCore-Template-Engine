@@ -220,8 +220,8 @@ class Theme
 					$extend_source = null;
 				else
 				{
-					$extend_class_name = 'tpl_' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $extend_source);
-					$extend_compiled = $this->_compile_dir . '/.toxg.' . $extend_class_name . '.php';
+					$extend_class_name = 'Template__' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $extend_source);
+					$extend_compiled = $this->_compile_dir . '/.compiled.' . $extend_class_name . '.php';
 
 					if ($this->_mtime_check && !$this->_needs_compile)
 					{
@@ -232,8 +232,8 @@ class Theme
 				}
 			}
 
-			$class_name = 'tpl_' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename);
-			$compiled = $this->_compile_dir . '/.toxg.' . $class_name . '.php';
+			$class_name = 'Template__' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename);
+			$compiled = $this->_compile_dir . '/.compiled.' . $class_name . '.php';
 
 			if ($this->_mtime_check && !$this->_needs_compile)
 			{
