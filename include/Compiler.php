@@ -16,6 +16,7 @@ class Compiler
 	const TPL_NSURI = 'urn:toxg:template';
 
 	protected $_source = null;
+	protected $_parser = null;
 
 	protected $_builder = null;
 	protected $_namespaces = array();
@@ -23,9 +24,6 @@ class Compiler
 	protected $_debugging = false;
 	protected $_compile_source = true;
 	protected $_compile_extend = true;
-
-	// This is an array of files we've compiled, just in case a theme loads the inherited files explicitly.
-	protected static $_compiled_files = array();
 
 	/**
 	 * Create a new Compiler object. We'll have one per file.
@@ -97,8 +95,8 @@ class Compiler
 	 */
 	public function prepareCompile()
 	{
-		$this->parser = $this->_createParser($this->_source['source_file']);
-		$this->parser->setNamespaces($this->_namespaces);
+		$this->_parser = $this->_createParser($this->_source['source_file']);
+		$this->_parser->setNamespaces($this->_namespaces);
 	}
 
 	/**
@@ -109,6 +107,7 @@ class Compiler
 	 */
 	public function compileFirstPass()
 	{
+		$this->_parser->parse();
 	}
 
 	/**

@@ -159,7 +159,7 @@ class TemplateList
 		foreach ($this->templates as $template)
 		{
 			include_once($template['cache_file']);
-			$this->template_objects['class_name'] = new $template['class_name'];
+			$this->template_objects['class_name'] = new $template['class_name']($this);
 		}
 	}
 }

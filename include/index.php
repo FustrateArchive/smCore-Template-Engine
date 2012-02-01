@@ -8,3 +8,4 @@ include_once(__DIR__ . '/SourceFile.php');
 include_once(__DIR__ . '/Template.php');
 include_once(__DIR__ . '/TemplateList.php');
 include_once(__DIR__ . '/Theme.php');
+include_once(__DIR__ . '/Token.php');

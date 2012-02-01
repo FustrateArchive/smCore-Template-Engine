@@ -18,25 +18,38 @@ class SourceFile extends Source
 	const ENABLE_CACHE = false;
 	static $cached_tokens = array();
 
-	public function __construct($file, $line = 1)
+	/**
+	 * Create a SourceFile out of a file path
+	 *
+	 * @param string $filename
+	 * @param int $line The line we're starting on.
+	 *
+	 * @access public
+	 */
+	public function __construct($filename, $line = 1)
 	{
-		if (!file_exists($file) || !is_readable($file))
+		if (!file_exists($filename) || !is_readable($filename))
 			throw new \Exception('parsing_cannot_open');
 
 		// If it's cached, this will return an array we will operate on.
-		$data = self::cacheForFile($file);
+		$data = self::cacheForFile($filename);
 
 		if ($data === false)
 		{
-			$data = @fopen($file, 'rt');
+			$data = @fopen($filename, 'rt');
 
 			if (!$data)
 				throw new \Exception('parsing_cannot_open');
 		}
 
-		parent::__construct($data, $file, $line);
+		parent::__construct($data, $filename, $line);
 	}
 
+	/**
+	 * Close the resource we opened if it's still active. Don't want to tie anything up.
+	 *
+	 * @access public
+	 */
 	public function __destruct()
 	{
 		if (is_resource($this->_data))
@@ -47,6 +60,13 @@ class SourceFile extends Source
 		parent::__destruct();
 	}
 
+	/**
+	 * Read a token from the data. SourceFile might also cache the tokens.
+	 *
+	 * @return smCore\TemplateEngine\Token
+	 *
+	 * @access public
+	 */
 	public function readToken()
 	{
 		$token = parent::readToken();
@@ -58,18 +78,33 @@ class SourceFile extends Source
 		return $token;
 	}
 
-	static function cacheForFile($file)
+	/**
+	 * Try to find tokens for a file if we've already cached them
+	 *
+	 * @param string $filename The file we're looking for
+	 * @return mixed An array of tokens if we cached them, otherwise false
+	 *
+	 * @access protected
+	 */
+	protected static function cacheForFile($filename)
 	{
 		// This assumes no concurrent usage (otherwise this list would be incomplete.)
-		if (isset(self::$cached_tokens[$file]))
-			return self::$cached_tokens[$file];
-		else
-			return false;
+		if (isset(self::$cached_tokens[$filename]))
+			return self::$cached_tokens[$filename];
+
+		return false;
 	}
 
-	static function cacheAddToken($file, Token $token)
+	/**
+	 * Add a token to a specific file's cache array
+	 *
+	 * @param string $filename Path to the file we're running through
+	 *
+	 * @access protected
+	 */
+	protected static function cacheAddToken($filename, Token $token)
 	{
 		if (self::ENABLE_CACHE)
-			self::$cached_tokens[$file][] = $token;
+			self::$cached_tokens[$filename][] = $token;
 	}
 }

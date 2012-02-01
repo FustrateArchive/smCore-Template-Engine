@@ -29,6 +29,8 @@ class Theme
 	protected $_templates = array();
 	protected $_layers = array();
 
+	protected $_parsing_doctype = 'xhtml';
+
 	protected static $_namespaces = array();
 
 	/**
@@ -163,7 +165,19 @@ class Theme
 	 */
 	public function recompile()
 	{
-		$this->_needs_compile = $recompile;
+		$this->_needs_compile = true;
+	}
+
+	/**
+	 * 
+	 *
+	 * @param 
+	 * @return 
+	 * @access 
+	 */
+	public function setParsingDoctype($type)
+	{
+		$this->_parsing_doctype = $type;
 	}
 
 	/**

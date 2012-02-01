@@ -107,18 +107,18 @@ class Source
 
 	public function __toString()
 	{
-		return __CLASS__ . ' ' . $this->file;
+		return __CLASS__ . ' ' . $this->_file;
 	}
 
-	public function addNamespace($name, $uri)
+	public function addNamespace($name, $nsuri = null)
 	{
-		$this->namespaces[$name] = $uri;
+		$this->_namespaces[$name] = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
 	}
 
 	public function getNamespace($name)
 	{
-		if (isset($this->namespaces[$name]))
-			return $this->namespaces[$name];
+		if (isset($this->_namespaces[$name]))
+			return $this->_namespaces[$name];
 		else
 			return false;
 	}
@@ -127,15 +127,15 @@ class Source
 	{
 		if ($this->isDataEOF())
 		{
-			if ($this->wait_comment !== false)
+			if ($this->_wait_comment !== false)
 				throw new \Exception('syntax_comment_unterminated');
 			return false;
 		}
 
 		// We may have a stream, an array of already-parsed tokens, or a string.
-		if (is_resource($this->data))
+		if (is_resource($this->_data))
 			return $this->_readStreamToken();
-		elseif (is_array($this->data))
+		elseif (is_array($this->_data))
 			return $this->_readArrayToken();
 		else
 			return $this->_readStringToken();
@@ -144,16 +144,16 @@ class Source
 	public function isDataEOF()
 	{
 		// For arrays, we use data_pos as an index.  Check only it.
-		if (is_array($this->data))
-			return $this->data_pos >= count($this->data);
+		if (is_array($this->_data))
+			return $this->_data_pos >= count($this->_data);
 
 		// For streams and strings, we have a buffer.  If it's not used up yet, we're not at the end.
-		if ($this->data_pos < mb_strlen($this->data_buffer))
+		if ($this->_data_pos < mb_strlen($this->_data_buffer))
 			return false;
 
-		if (is_resource($this->data))
+		if (is_resource($this->_data))
 		{
-			if (!feof($this->data))
+			if (!feof($this->_data))
 				return false;
 		}
 		return true;
@@ -162,13 +162,13 @@ class Source
 	protected function _readStreamToken()
 	{
 		// Extend the buffer when it gets too small.  We won't allow an element longer than 2048 bytes.
-		if (mb_strlen($this->data_buffer) - $this->data_pos < self::MAX_TAG_LENGTH)
+		if (mb_strlen($this->_data_buffer) - $this->_data_pos < self::MAX_TAG_LENGTH)
 		{
-			$this->data_buffer = mb_substr($this->data_buffer, $this->data_pos) . fread($this->data, self::BUFFER_APPEND_LENGTH);
-			$this->data_pos = 0;
+			$this->_data_buffer = mb_substr($this->_data_buffer, $this->_data_pos) . fread($this->_data, self::BUFFER_APPEND_LENGTH);
+			$this->_data_pos = 0;
 		}
 
-		if (mb_strlen($this->data_buffer) == 0)
+		if (mb_strlen($this->_data_buffer) == 0)
 			return false;
 
 		return $this->_readStringToken();
@@ -176,18 +176,18 @@ class Source
 
 	protected function _readArrayToken()
 	{
-		if ($this->data_pos >= count($this->data))
+		if ($this->_data_pos >= count($this->_data))
 			return false;
 
-		return $this->data[$this->data_pos++];
+		return $this->_data[$this->_data_pos++];
 	}
 
 	protected function _readStringToken()
 	{
-		if ($this->wait_comment !== false)
+		if ($this->_wait_comment !== false)
 			return $this->_readComment();
 
-		switch ($this->data_buffer[$this->data_pos])
+		switch ($this->_data_buffer[$this->_data_pos])
 		{
 		case '<':
 			return $this->_readTagToken();
@@ -196,7 +196,7 @@ class Source
 			return $this->_readCurlyToken();
 
 		case ']':
-			if ($this->_firstPosOf(']]>') === $this->data_pos)
+			if ($this->_firstPosOf(']]>') === $this->_data_pos)
 				return $this->_makeToken('cdata-end', mb_strlen(']]>'));
 
 			// Intentional fall-through, anything else after ] is fine.
@@ -208,18 +208,18 @@ class Source
 
 	protected function _readComment()
 	{
-		if ($this->_firstPosOf('--->') === $this->data_pos)
+		if ($this->_firstPosOf('--->') === $this->_data_pos)
 		{
-			$this->wait_comment = false;
+			$this->_wait_comment = false;
 			return $this->_makeToken('comment-end', mb_strlen('--->'));
 		}
 
 		// Find the next interesting character.
 		$next_pos = $this->_firstPosOf('--->');
 		if ($next_pos === false)
-			$next_pos = mb_strlen($this->data_buffer);
+			$next_pos = mb_strlen($this->_data_buffer);
 
-		return $this->_makeToken('comment', $next_pos - $this->data_pos);
+		return $this->_makeToken('comment', $next_pos - $this->_data_pos);
 	}
 
 	protected function _readContent($offset = 0)
@@ -227,22 +227,22 @@ class Source
 		// Find the next interesting character.
 		$next_pos = $this->_firstPosOf(array('<', '{', ']]>'), $offset);
 		if ($next_pos === false)
-			$next_pos = mb_strlen($this->data_buffer);
+			$next_pos = mb_strlen($this->_data_buffer);
 
-		return $this->_makeToken('content', $next_pos - $this->data_pos);
+		return $this->_makeToken('content', $next_pos - $this->_data_pos);
 	}
 
 	protected function _readTagToken()
 	{
 		// CDATA sections toggle escaping.
-		if ($this->_firstPosOf('<![CDATA[') === $this->data_pos)
+		if ($this->_firstPosOf('<![CDATA[') === $this->_data_pos)
 			return $this->_makeToken('cdata-start', mb_strlen('<![CDATA['));
 
 		// Comments can comment out commands, which won't get processed.
-		if ($this->_firstPosOf('<!---') === $this->data_pos)
+		if ($this->_firstPosOf('<!---') === $this->_data_pos)
 		{
 			// This tells us to do nothing until a --->.
-			$this->wait_comment = $this->line;
+			$this->_wait_comment = $this->_line;
 			return $this->_makeToken('comment-start', mb_strlen('<!---'));
 		}
 
@@ -250,7 +250,7 @@ class Source
 		$ns_mark = $this->_firstPosOf(':', 1);
 		if ($ns_mark !== false)
 		{
-			$ns = mb_substr($this->data_buffer, $this->data_pos + 1, $ns_mark - $this->data_pos - 1);
+			$ns = mb_substr($this->_data_buffer, $this->_data_pos + 1, $ns_mark - $this->_data_pos - 1);
 
 			// Oops, don't look at the / at the front...
 			if ($ns[0] === '/')
@@ -272,9 +272,10 @@ class Source
 	protected function _readCurlyToken()
 	{
 		// Make sure it's something interesting and we're not wasting our time...
-		if (mb_strlen($this->data_buffer) <= $this->data_pos + 1)
+		if (mb_strlen($this->_data_buffer) <= $this->_data_pos + 1)
 			return $this->_readContent(1);
-		$next_c = $this->data_buffer[$this->data_pos + 1];
+
+		$next_c = $this->_data_buffer[$this->_data_pos + 1];
 
 		// We support {$var}, {#lang}, and {tpl:stuff /}.
 		if ($next_c === '$')
@@ -289,7 +290,7 @@ class Source
 			$ns_mark = $this->_firstPosOf(':', 1);
 			if ($ns_mark !== false)
 			{
-				$ns = mb_substr($this->data_buffer, $this->data_pos + 1, $ns_mark - $this->data_pos - 1);
+				$ns = mb_substr($this->_data_buffer, $this->_data_pos + 1, $ns_mark - $this->_data_pos - 1);
 
 				// Oops, don't look at the / at the front...
 				if ($ns[0] === '/')
@@ -297,11 +298,11 @@ class Source
 
 				if (!self::validNCName($ns))
 					$ns = false;
-				elseif ($this->data_buffer[$ns_mark + 1] === ':')
+				elseif ($this->_data_buffer[$ns_mark + 1] === ':')
 					$type = 'var-ref';
 				// What we're checking here is that we don't have this: {key:'value'}...
 				// Or in other words, after the : we need an alphanumeric char or similar.
-				elseif (!self::validNCName($this->data_buffer[$ns_mark + 1]))
+				elseif (!self::validNCName($this->_data_buffer[$ns_mark + 1]))
 					$ns = false;
 			}
 			else
@@ -309,7 +310,7 @@ class Source
 
 			if ($ns === false)
 			{
-				$check = trim($this->data_buffer[$this->data_pos + 1]);
+				$check = trim($this->_data_buffer[$this->_data_pos + 1]);
 				if (!empty($check))
 					$type = 'output-ref';
 			}
@@ -326,16 +327,16 @@ class Source
 	protected function _readGenericTag($type, $nest_c, $end_c, $offset)
 	{
 		// Now it's time to parse a tag.  Start after any namespace/</etc. we already found.
-		$end_pos = $this->data_pos + $offset;
-		$finality = mb_strlen($this->data_buffer);
+		$end_pos = $this->_data_pos + $offset;
+		$finality = mb_strlen($this->_data_buffer);
 		$nesting = 0;
 
 		while ($end_pos < $finality)
 		{
 			// The only way to end a tag is >/}, but we respect quotes too.
-			$end_bracket = strpos($this->data_buffer, $end_c, $end_pos);
-			$nest_bracket = strpos($this->data_buffer, $nest_c, $end_pos);
-			$quote = strpos($this->data_buffer, '"', $end_pos);
+			$end_bracket = strpos($this->_data_buffer, $end_c, $end_pos);
+			$nest_bracket = strpos($this->_data_buffer, $nest_c, $end_pos);
+			$quote = strpos($this->_data_buffer, '"', $end_pos);
 
 			// Nesting looks like this: {#x:{#y:1}}
 			if ($nest_bracket !== false && $end_bracket !== false)
@@ -365,7 +366,7 @@ class Source
 
 			if ($quote !== false)
 			{
-				$quote = strpos($this->data_buffer, '"', $quote + 1);
+				$quote = strpos($this->_data_buffer, '"', $quote + 1);
 				if ($quote === false)
 					throw new \Exception('syntax_tag_buffer_unmatched_quotes');
 
@@ -378,44 +379,44 @@ class Source
 		if ($type === 'tag')
 		{
 			// Last char is > or }, so an empty tag would have a / before that.
-			if ($this->data_buffer[$end_pos - 2] === '/')
+			if ($this->_data_buffer[$end_pos - 2] === '/')
 				$type = 'tag-empty';
 			// And... obviously, if the second char is a /, it's an end tag.
-			elseif ($this->data_buffer[$this->data_pos + 1] === '/')
+			elseif ($this->_data_buffer[$this->_data_pos + 1] === '/')
 				$type = 'tag-end';
 			else
 				$type = 'tag-start';
 		}
 
-		return $this->_makeToken($type, $end_pos - $this->data_pos);
+		return $this->_makeToken($type, $end_pos - $this->_data_pos);
 	}
 
 	protected function _makeToken($type, $chars)
 	{
-		$data = mb_substr($this->data_buffer, $this->data_pos, $chars);
-		$this->data_pos += $chars;
+		$data = mb_substr($this->_data_buffer, $this->_data_pos, $chars);
+		$this->_data_pos += $chars;
 
 		$tok = $this->_makeTokenObject(array(
-			'file' => $this->file,
-			'line' => $this->line,
+			'file' => $this->_file,
+			'line' => $this->_line,
 			'type' => $type,
 			'data' => $data,
-			'tabs' => $this->next_token_tabs,
+			'tabs' => $this->_next_token_tabs,
 		));
 
 		// If it wasn't actually a valid tag, let's go back and eat less after all.
 		if ($tok->type != $type && $tok->type == 'content' && $chars > 1)
 		{
 			// Backpeddle....
-			$this->data_pos -= $chars;
+			$this->_data_pos -= $chars;
 			return $this->_makeToken('content', 1);
 		}
 
 		// Count the tabs at the end, because we're magic like that
-		$this->next_token_tabs = mb_strlen($data) - mb_strlen(rtrim($data, "\t"));
+		$this->_next_token_tabs = mb_strlen($data) - mb_strlen(rtrim($data, "\t"));
 
 		// This token was now, next token will move forward as much as this token did.
-		$this->line += mb_substr_count($data, "\n");
+		$this->_line += mb_substr_count($data, "\n");
 		return $tok;
 	}
 
@@ -432,7 +433,7 @@ class Source
 		$find = (array) $find;
 		foreach ($find as $arg)
 		{
-			$found = strpos($this->data_buffer, $arg, $this->data_pos + $offset);
+			$found = strpos($this->_data_buffer, $arg, $this->_data_pos + $offset);
 			if ($found !== false && ($least === false || $found < $least))
 				$least = $found;
 		}
