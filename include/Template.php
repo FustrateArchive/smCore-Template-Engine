@@ -37,30 +37,31 @@ class Template
 		{
 			if ($data[1] === 'above' || $data[1] === 'below')
 			{
-				Compiler::addBlockListeners($data[0], $data[1], array($this, 'block__' . $data[0] . '__' . $data[1]));
+				TemplateList::addBlockListener($data[0], $data[1], array($this, 'block__' . $data[0] . '__' . $data[1]));
 			}
 			else if ($data[1] === 'both')
 			{
-				Compiler::addBlockListeners($data[0], 'above', array($this, 'block__' . $data[0] . '__above'));
-				Compiler::addBlockListeners($data[0], 'below', array($this, 'block__' . $data[0] . '__below'));
+				TemplateList::addBlockListener($data[0], 'above', array($this, 'block__' . $data[0] . '__above'));
+				TemplateList::addBlockListener($data[0], 'below', array($this, 'block__' . $data[0] . '__below'));
 			}
 			else if ($data[1] === 'replace')
 			{
-				Compiler::addBlockListeners($data[0], 'replace', array($this, 'block__' . $data[0]));
+				TemplateList::addBlockListener($data[0], 'replace', array($this, 'block__' . $data[0]));
 			}
 		}
 	}
 
 	/**
-	 * Tell the Compiler that this template file "owns" certain template names
+	 * Tell the TemplateList that this template file "owns" certain template names
 	 *
 	 * @param 
 	 * @return 
 	 * @access 
 	 */
-	protected function _definesTemplates(array $templates = array())
+	protected function _registerTemplates(array $templates = array())
 	{
-		Compiler::registerTemplates($this, $templates);
+		foreach ($templates as $name => $required_attributes)
+			TemplateList::registerTemplate($name, array($this, 'template__' . $name), $required_attributes);
 	}
 
 	/**

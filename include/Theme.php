@@ -259,18 +259,18 @@ class Theme
 		$this->_templatelist->loadAll();
 
 		foreach ($this->layers as $layer)
-			$this->callTemplate($layer[0], 'above', $layer[1]);
+			$this->_callTemplate($layer[0], 'above', $layer[1]);
 
 		foreach ($this->_templates as $template)
 		{
-			$this->callTemplate($inside[0], 'above', $inside[1]);
-			$this->callTemplate($inside[0], 'below', $inside[1]);
+			$this->_callTemplate($inside[0], 'above', $inside[1]);
+			$this->_callTemplate($inside[0], 'below', $inside[1]);
 		}
 
 		$reversed = array_reverse($this->layers);
 
 		foreach ($reversed as $layer)
-			$this->callTemplate($layer[0], 'below', $layer[1]);
+			$this->_callTemplate($layer[0], 'below', $layer[1]);
 	}
 
 	/**

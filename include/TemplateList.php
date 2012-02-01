@@ -13,12 +13,14 @@ namespace smCore\TemplateEngine;
 
 class TemplateList
 {
-	protected $builder = null;
-	protected $namespaces = array();
-	protected $common_vars = array();
-	protected $debugging = false;
-	protected $templates = array();
-	protected $template_objects = array();
+	protected $_builder = null;
+	protected $_namespaces = array();
+	protected $_common_vars = array();
+	protected $_debugging = false;
+	protected $_templates = array();
+	protected $_loaded = false;
+
+	protected static $_registered_templates = array();
 
 	/**
 	 * Constructor
@@ -37,20 +39,20 @@ class TemplateList
 	 * @return 
 	 * @access public
 	 */
-	public function setNamespaces(array $uris)
+	public function setNamespaces(array $namespaces)
 	{
-		$this->namespaces = $uris;
+		$this->_namespaces = $namespaces;
 	}
 
 	/**
 	 * Set the common variables to use in these templates
 	 *
-	 * @param array $names An array of variable names
+	 * @param array $common_vars An array of variable names
 	 * @access public
 	 */
-	public function setCommonVars(array $names)
+	public function setCommonVars(array $common_vars)
 	{
-		$this->common_vars = $names;
+		$this->_common_vars = $common_vars;
 	}
 
 	/**
@@ -61,7 +63,7 @@ class TemplateList
 	 */
 	public function setDebugging($debugging = true)
 	{
-		$this->debugging = (boolean) $debugging;
+		$this->_debugging = (boolean) $debugging;
 	}
 
 	/**
@@ -75,10 +77,10 @@ class TemplateList
 	 */
 	public function listenEmit($ns, $name, $callback)
 	{
-		if ($this->builder === null)
-			$this->builder = new Builder();
+		if ($this->_builder === null)
+			$this->_builder = new Builder();
 
-		$this->builder->listenEmit($ns, $name, $callback);
+		$this->_builder->listenEmit($ns, $name, $callback);
 	}
 
 	/**
@@ -93,7 +95,7 @@ class TemplateList
 	 */
 	public function addTemplate($source_file, $cache_file, $class_name, $extend_class_name = null)
 	{
-		$this->templates[] = array(
+		$this->_templates[] = array(
 			'source_file' => $source_file,
 			'cache_file' => $cache_file,
 			'class_name' => $class_name,
@@ -110,11 +112,11 @@ class TemplateList
 	 */
 	protected function _setupCompiler($template)
 	{
-		$compiler = new Compiler($template, $this->builder);
+		$compiler = new Compiler($template, $this->_builder);
 
-		$compiler->setNamespaces($this->namespaces);
-		$compiler->setCommonVars($this->common_vars);
-		$compiler->setDebugging($this->debugging);
+		$compiler->setNamespaces($this->_namespaces);
+		$compiler->setCommonVars($this->_common_vars);
+		$compiler->setDebugging($this->_debugging);
 
 		return $compiler;
 	}
@@ -126,28 +128,31 @@ class TemplateList
 	 */
 	public function compileAll()
 	{
-		if ($this->builder === null)
-			$this->builder = new Builder();
+		if ($this->_builder === null)
+			$this->_builder = new Builder();
 
 		$templates = array();
 
 		// Create a Compiler object for each template array
-		foreach ($this->templates as $k => $template)
-			$templates[$k] = $this->_setupCompiler($template);
-
-		// Now loop through and tokenize/validate them all
-		foreach ($templates as $template)
+		foreach ($this->_templates as $k => $template)
 		{
-			$template->prepareCompile();
-			$data = $template->compileFirstPass();
+			$templates[$k] = $template;
+			$templates[$k]['compiler'] = $this->_setupCompiler($template);
+		}
 
+		// Now loop through and tokenize/validate them all, before we get to the real compiling.
+		foreach ($templates as $k => $template)
+		{
+			$data = $templates[$k]['compiler']->prepareCompile();
+
+			$templates[$k]['tokens'] = $data['tokens'];
 			// @todo: check $data for overridden templates, duplicate block names
 		}
 
 		// And finally, put everything together
-		foreach ($this->templates as $k => $template)
+		foreach ($templates as $template)
 		{
-			$templates[$k]->compileSecondPass($template['cache_file']);
+			$this->_builder->build($template);
 		}
 	}
 
@@ -158,10 +163,36 @@ class TemplateList
 	 */
 	public function loadAll()
 	{
-		foreach ($this->templates as $template)
+		$this->_loaded = true;
+
+		foreach ($this->_templates as $template)
 		{
 			include_once($template['cache_file']);
-			$this->template_objects['class_name'] = new $template['class_name']($this);
+			$class_name = 'Template__' . $template['class_name'];
+			new $class_name($this);
 		}
+	}
+
+	/**
+	 * 
+	 *
+	 * @param 
+	 * @return 
+	 * @access 
+	 */
+	public function callTemplate($name)
+	{
+	}
+
+	public static function registerTemplate($name, $callback, array $required_attributes = array())
+	{
+		self::$_registered_templates[$name] = array(
+			'required_attributes' => $required_attributes,
+			'callback' => $required_attributes,
+		);
+	}
+
+	public static function addBlockListener($name, $position, $callback)
+	{
 	}
 }

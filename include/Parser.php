@@ -20,6 +20,7 @@ class Parser
 	protected $_listeners = array();
 	protected $_templates = array();
 	protected $_blocks = array();
+	protected $_tokens = array();
 
 	protected $_tree = array();
 	protected $_inside_cdata = false;
@@ -180,6 +181,8 @@ class Parser
 	 */
 	protected function _parseNextToken(Token $token)
 	{
+		$this->_tokens[] = $token;
+
 		switch ($token->type)
 		{
 			case 'content':
@@ -356,7 +359,6 @@ class Parser
 
 		// This makes it easier, since they're on the same element after all.
 		$token->attributes = $close_token->attributes;
-		$this->_fire('parsedElement', $token);
 
 		// We might be exiting a template. These can't be nested.
 		if ($token->nsuri == Compiler::TPL_NSURI)
@@ -366,6 +368,8 @@ class Parser
 			else if ($token->name === 'block')
 				$this->_handleTagBlockEnd($token);
 		}
+
+		$this->_fire('parsedElement', $token);
 	}
 
 	/**
@@ -557,6 +561,18 @@ class Parser
 	 */
 	protected function _handleTagBlockEnd(Token $token)
 	{
+	}
+
+	/**
+	 * Get the tokens this parser found
+	 *
+	 * @param 
+	 * @return 
+	 * @access 
+	 */
+	public function getTokens()
+	{
+		return $this->_tokens;
 	}
 
 	/**

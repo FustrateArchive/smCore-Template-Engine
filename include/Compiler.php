@@ -19,11 +19,9 @@ class Compiler
 	protected $_parser = null;
 
 	protected $_builder = null;
-	protected $_namespaces = array();
 	protected $_common_vars = array();
 	protected $_debugging = false;
-	protected $_compile_source = true;
-	protected $_compile_extend = true;
+	protected $_namespaces = array();
 
 	/**
 	 * Create a new Compiler object. We'll have one per file.
@@ -90,7 +88,11 @@ class Compiler
 	}
 
 	/**
-	 * Do stuff before we compile anything
+	 * Do stuff before we compile anything. In here, we create all of the tokens and validate
+	 * their structure. This includes finding all block and template definitions so we know
+	 * what's what when we output code.
+	 *
+	 * @return array Data about the source we parse here, including template and blocks defined
 	 *
 	 * @access public
 	 */
@@ -98,23 +100,17 @@ class Compiler
 	{
 		$this->_parser = $this->_createParser($this->_source['source_file']);
 		$this->_parser->setNamespaces($this->_namespaces);
-	}
 
-	/**
-	 * On the first pass, we create all of the tokens and validate their structure. This includes
-	 * finding all block and template definitions so we know what's what when we output code.
-	 *
-	 * @return array Data about the source we just parsed.
-	 *
-	 * @access public
-	 */
-	public function compileFirstPass()
-	{
 		$this->_parser->parse();
+
+		$this->_tokens = $this->_parser->getTokens();
+
+		// @todo: validate tokens across templates here?
 
 		return array(
 			'templates' => $this->_parser->getTemplatesDefined(),
 			'blocks' => $this->_parser->getBlocksDefined(),
+			'tokens' => $this->_tokens,
 		);
 	}
 
@@ -123,19 +119,24 @@ class Compiler
 	 *
 	 * @access public
 	 */
-	public function compileSecondPass()
+	public function compile()
 	{
-	}
+		$this->_builder->setDebugging($this->_debugging);
+		$this->_builder->setCommonVars($this->_common_vars);
+		$this->_builder->setCacheFile($this->_source['cache_file']);
 
+		try
+		{
+			$this->_builder->run($this->_tokens);
+			$this->_builder->finalize();
+		}
+		// Anything goes wrong, we kill the cache file.
+		catch (Exception $e)
+		{
+			$this->_builder->abort();
+			@unlink($this->_source['cache_file']);
 
-
-
-
-
-
-
-
-	public static function addBlockListener($name, $callback)
-	{
+			throw $e;
+		}
 	}
 }

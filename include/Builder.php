@@ -17,16 +17,16 @@ class Builder
 	protected $_common_vars = array();
 
 	protected $_data = null;
-	protected $_data_close = false;
+	protected $_close_data = false;
 
-	protected $last_file = null;
-	protected $last_line = 1;
-	protected $prebuilder = null;
-	protected $last_template = null;
-	protected $has_emitted = false;
-	protected $disable_emit = false;
-	protected $emit_output = array();
-	protected $listeners = array();
+	protected $_last_file = null;
+	protected $_last_line = 1;
+	protected $_prebuilder = null;
+	protected $_last_template = null;
+	protected $_has_emitted = false;
+	protected $_disable_emit = false;
+	protected $_emit_output = array();
+	protected $_listeners = array();
 
 	public function __construct()
 	{
@@ -34,7 +34,7 @@ class Builder
 
 	public function __destruct()
 	{
-		$this->abort();
+		$this->_closeCacheFile();
 	}
 
 	public function setDebugging($enabled)
@@ -47,27 +47,68 @@ class Builder
 		$this->_common_vars = $names;
 	}
 
-	public function setCacheFile($cache_file)
+	public function build($template)
 	{
-		if (is_resource($cache_file))
-			$this->data = $cache_file;
-		else
-		{
-			$this->data = @fopen($cache_file, 'wt');
+		$this->_startCacheFile($template['cache_file'], $template['class_name'], $template['extend_class_name']);
 
-			if (!$this->data)
-				throw new \Exception('builder_cannot_open', $cache_file);
 
-			$this->data_close = true;
-		}
-
-		$this->emitCode('<?php ');
+		$this->_finalize();
+		$this->_closeCacheFile();
 	}
 
-	public function abort()
+	protected function _startCacheFile($cache_file, $class_name, $extend_class_name)
+	{
+		if (is_resource($cache_file))
+			$this->_data = $cache_file;
+		else
+		{
+			$this->_data = @fopen($cache_file, 'wt');
+
+			if (!$this->_data)
+				throw new \Exception('builder_cannot_open');
+
+			$this->_close_data = true;
+		}
+
+		if ($extend_class_name === null)
+			$extend_class_name = 'smCore\TemplateEngine\Template';
+		else
+			$extend_class_name = 'Template__' . $extend_class_name;
+
+		$this->emitCode('<?php 
+
+
+class Template__' . $class_name . ' extends ' . $extend_class_name . '
+{');
+	}
+
+	protected function _finalize()
+	{
+		// We embed usage data for preloading/efficiency purposes.
+//		$usage = $this->prebuilder->getTemplateUsage();
+//		$this->emitCode($this->getUsageClassName() . '::markUsage(' . var_export($usage, true) . ');');
+
+		// !!! Emit something here for hooks?
+
+		// Just end the file now.
+		$this->emitCode('
+}
+
+?>');
+
+		if ($this->_close_data)
+			fclose($this->_data);
+
+		$this->_data = null;
+
+		if ($this->_last_template !== null)
+			throw new Exception('builder_unclosed_template');
+	}
+
+	public function _closeCacheFile()
 	{
 		// Release the file so it isn't left open until the request end.
-		if ($this->_data !== null && $this->_data_close)
+		if ($this->_data !== null && $this->_close_data)
 			@fclose($this->_data);
 	}
 
@@ -108,15 +149,6 @@ class Builder
 			if ($result === false)
 				break;
 		}
-	}
-
-	public function setupParser(Parser $parser)
-	{
-		if ($this->prebuilder !== null)
-			$this->prebuilder->setupOverlayParser($parser);
-
-		$parser->listen('parsedContent', array($this, 'parsedContent'));
-		$parser->listen('parsedElement', array($this, 'parsedElement'));
 	}
 
 	public function parsedContent(Token $token, Parser $parser)
@@ -179,45 +211,45 @@ class Builder
 		// Assumption: can't be tag-empty (verified by parser.)
 		if ($token->type === 'tag-start')
 		{
-			$this->last_template = $this->prebuilder->getTemplateForBuild($token);
+			$this->_last_template = $this->prebuilder->getTemplateForBuild($token);
 
 			// Template was already built, so don't emit it again.
-			if ($this->last_template['should_emit'] === false)
+			if ($this->_last_template['should_emit'] === false)
 				$this->disable_emit = true;
 
-			$this->emitTemplateStart($this->last_template['name'] . '_above', $token);
+			$this->emitTemplateStart($this->_last_template['name'] . '_above', $token);
 		}
 		elseif ($token->type === 'tag-end')
 		{
 			// If we haven't output the below, output it now.
-			if ($this->last_template['stage'] == 1)
+			if ($this->_last_template['stage'] == 1)
 			{
 				$this->emitTemplateEnd(false, $token);
-				$this->emitTemplateStart($this->last_template['name'] . '_below', $token);
+				$this->emitTemplateStart($this->_last_template['name'] . '_below', $token);
 
-				$this->last_template['stage'] = 2;
+				$this->_last_template['stage'] = 2;
 			}
 
 			$this->emitTemplateEnd(true, $token);
 
 			// Even if it wasn't disabled before, enable it until the next template.
 			$this->disable_emit = false;
-			$this->last_template = null;
+			$this->_last_template = null;
 		}
 	}
 
 	protected function handleTagContent(Token $token)
 	{
 		// Already hit one, can't have two.
-		if ($this->last_template['stage'] == 2)
+		if ($this->_last_template['stage'] == 2)
 			$token->toss('tpl_content_twice');
 
 		// Assumption: must be tag-empty (verified by parser.)
 		$this->emitTemplateEnd(false, $token);
-		$this->emitTemplateStart($this->last_template['name'] . '_below', $token);
+		$this->emitTemplateStart($this->_last_template['name'] . '_below', $token);
 
 		// Mark that we've output the above AND below.
-		$this->last_template['stage'] = 2;
+		$this->_last_template['stage'] = 2;
 	}
 
 	protected function handleTagCall(Token $token)
@@ -323,24 +355,6 @@ class Builder
 		$this->emitCode('}', $token);
 	}
 
-	public function finalize()
-	{
-		// We embed usage data for preloading/efficiency purposes.
-		$usage = $this->prebuilder->getTemplateUsage();
-		$this->emitCode($this->getUsageClassName() . '::markUsage(' . var_export($usage, true) . ');');
-
-		// !!! Emit something here for hooks?
-
-		// Just end the file now.
-		$this->emitCode(' ?>');
-		if ($this->data_close)
-			fclose($this->data);
-		$this->data = null;
-
-		if ($this->last_template !== null)
-			throw new Exception('builder_unclosed_template');
-	}
-
 	public function emitCode($code, Token $token = null)
 	{
 		$this->has_emitted = true;
@@ -434,8 +448,8 @@ class Builder
 	{
 		// Don't output any \r's, we use 't' mode, so those are automatic.
 		// !!!SLOW Can we remove this str_replace?  Just need to test line numbers matching on mac/linux/windows with several line ending types.
-		$this->fwrite(str_replace("\r", '', $code));
-		$this->last_line += substr_count($code, "\n");
+		$this->_fwrite(str_replace("\r", '', $code));
+		$this->_last_line += substr_count($code, "\n");
 	}
 
 	protected function emitDebugPos(Token $token, $type = 'code', $force = false)
@@ -443,15 +457,15 @@ class Builder
 		// Okay, maybe we don't need to bulk up the template.  Let's see how we can get out of updating the pos.
 
 		// If the file is the same, we have a chance.
-		if ($token->file === $this->last_file && !$force)
+		if ($token->file === $this->_last_file && !$force)
 		{
 			// If the line is the same as it should be, we're good.
-			if ($token->line == $this->last_line)
+			if ($token->line == $this->_last_line)
 				return false;
-			// If we just need a higher line number, then just print some newlines (cheaper for PHP to cache.)
-			elseif ($token->line > $this->last_line)
+			elseif ($token->line > $this->_last_line)
 			{
-				$this->emitCodeInternal(str_repeat("\n", $token->line - $this->last_line));
+				// If we just need a higher line number, then just print some newlines (cheaper for PHP to cache.)
+				$this->emitCodeInternal(str_repeat("\n", $token->line - $this->_last_line));
 				return false;
 			}
 
@@ -465,27 +479,27 @@ class Builder
 			$file = realpath($file);
 
 		if ($type === 'echo')
-			$this->fwrite(';');
+			$this->_fwrite(';');
 
 		// This triggers the error system to remap the caller's file/line with the specified.
 		if (!$force)
-			$this->fwrite("\n");
+			$this->_fwrite("\n");
 
-		$this->fwrite($this->getErrorClassName() . '::remap(\'' . addcslashes($file, '\\\'') . '\', ' . (int) $token->line . ');');
+		$this->_fwrite($this->getErrorClassName() . '::remap(\'' . addcslashes($file, '\\\'') . '\', ' . (int) $token->line . ');');
 
-		$this->last_file = $token->file;
-		$this->last_line = $token->line;
+		$this->_last_file = $token->file;
+		$this->_last_line = $token->line;
 
 		return true;
 	}
 
-	protected function fwrite($string)
+	protected function _fwrite($string)
 	{
 		if ($string === '')
 			return;
 
-		if (@fwrite($this->data, $string) === false)
-			throw new Exception('builder_cannot_write');
+		if (@fwrite($this->_data, $string) === false)
+			throw new \Exception('builder_cannot_write');
 	}
 
 	public function parseExpression($type, $expression, Token $token, $escape = false)
