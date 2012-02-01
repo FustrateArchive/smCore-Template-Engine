@@ -17,11 +17,11 @@ class Template
 	{
 	}
 
-	protected function _usesBlocks()
+	protected function _usesBlocks(array $blocks = array())
 	{
 	}
 
-	protected function _definesTemplates()
+	protected function _definesTemplates(array $templates = array())
 	{
 	}
 }

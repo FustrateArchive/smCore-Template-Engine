@@ -2,7 +2,7 @@
 
 ini_set('display_errors', 1);
 
-include_once(__DIR__ . '/include2/index.php');
+include_once(__DIR__ . '/include/index.php');
 
 class testTheme extends smCore\TemplateEngine\Theme
 {
@@ -17,7 +17,7 @@ class testTheme extends smCore\TemplateEngine\Theme
 	}
 }
 
-$theme = new testTheme(__DIR__, __DIR__, dirname(__DIR__) . '/other_theme', true);
+$theme = new testTheme(__DIR__, __DIR__, __DIR__ . '/other_theme', true);
 
 $theme->loadTemplate('templates.tpl');
 $theme->output();

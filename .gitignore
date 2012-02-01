@@ -1,2 +1,3 @@
-.toxg.*
+.compiled.*
 error_log
+*.esproj

@@ -85,17 +85,7 @@ class Compiler
 	 */
 	public function prepareCompile()
 	{
-		// Make sure we aren't parsing anything twice. Standardize using realpath().
-		$source_realpath = realpath($this->source['source_file']);
-		$extend_realpath = realpath($this->source['extend_source_file']);
-
-		if (in_array($source_realpath, self::$_compiled_files))
-			$this->_compile_source = false;
-
-		if ($this->source['extend_source_file'] === null || in_array($extend_realpath, self::$_compiled_files))
-			$this->_compile_extend = false;
-
-		$this->parser = $this->createParser($source_realpath);
+		$this->parser = $this->createParser($this->source['source_file']);
 		$this->parser->setNamespaces($this->_namespaces);
 	}
 
