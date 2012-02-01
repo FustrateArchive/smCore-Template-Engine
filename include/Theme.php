@@ -1,212 +1,281 @@
 <?php
 
+/**
+ * Theme
+ *
+ * @package smCore Template Engine
+ * @author Steven "Fustrate" Hoffman
+ * @license MPL 1.1
+ * @version 0.1 Alpha 1
+ */
+
 namespace smCore\TemplateEngine;
 
 class Theme
 {
-	protected $nsuri = 'urn:site:template';
-	protected $extension = 'tpl';
-	protected $template_dir = '.';
-	protected $inherited_dirs = array();
-	protected $compile_dir = '.';
-	protected $mtime_check = true;
-	protected $needs_compile = false;
+	protected $_extension = 'tpl';
+	protected $_template_dir = '.';
+	protected $_compile_dir = '.';
+	protected $_parent_theme = null;
 
-	protected $overlays = array();
-	protected $mtime = 0;
+	protected $_template_params = array();
+	protected $_common_vars = array();
 
-	protected static $namespaces = array();
+	protected $_mtime = 0;
+	protected $_mtime_check = true;
+	protected $_needs_compile = false;
 
-	protected $templates = null;
-	protected $layers = array();
-	protected $inside = array();
-	protected $template_params = array();
-	protected $compiled_list = array();
+	protected $_templatelist = null;
 	protected $_templates = array();
-	protected $_overlays = array();
-	protected $overlayCalls = array();
-	protected $common_vars = array();
+	protected $_layers = array();
 
-	public function __construct($template_dir, $compile_dir, array $inherited_dirs = array(), $needs_compile = null)
+	protected static $_namespaces = array();
+
+	/**
+	 * Construct a new theme object
+	 *
+	 * @param string $template_dir Where to find the templates included with this theme
+	 * @param string $compile_dir Where to save the compiled templates to
+	 * @param array $inherited_dirs An array of strings, directories in which to search for missing templates
+	 * @param boolean $needs_compile Set to true in order to recompile templates on every page load.
+	 *
+	 * @access public
+	 */
+	public function __construct($template_dir, $compile_dir, $parent_theme = null, $needs_compile = null)
 	{
 		if (!is_null($needs_compile) && is_bool($needs_compile))
-			$this->needs_compile = $needs_compile;
+			$this->_needs_compile = $needs_compile;
 
-		$this->template_dir = $template_dir;
-		$this->compile_dir = $compile_dir;
-		$this->inherited_dirs = $inherited_dirs;
+		$this->_template_dir = $template_dir;
+		$this->_compile_dir = $compile_dir;
+		$this->_parent_theme = $parent_theme;
 
-		$this->templates = new TemplateList();
+		$this->_templatelist = new TemplateList();
 
-		self::$namespaces = array(
-			'site' => $this->nsuri,
-			'tpl' => Template::TPL_NAMESPACE,
+		self::$_namespaces = array(
+			'tpl' => Compiler::TPL_NSURI,
 		);
 	}
 
+	/**
+	 * Set a variable to be used in a template.
+	 *
+	 * @param string $key The key to use to access this variable in a template
+	 * @param mixed $value The value to be accessed by this parameter
+	 *
+	 * @access public
+	 */
 	public function setTemplateParam($key, $value)
 	{
-		$this->template_params[$key] = $value;
+		$this->_template_params[$key] = $value;
 	}
 
+	/**
+	 * Variables which are common to all templates
+	 *
+	 * @todo: Should be merged with setTemplateParam?
+	 *
+	 * @param array $vars An array of variable names, i.e. array('context', 'names', 'app')
+	 *
+	 * @access public
+	 */
+	public function addCommonVars(array $vars)
+	{
+		$this->_common_vars = array_merge((array) $vars, $this->_common_vars);
+	}
+
+	/**
+	 * Add a namespace to be recognized by the parser. Namespaces not in this array are passed
+	 * over as "content" tokens.
+	 *
+	 * @param string $name The namespace to use, i.e. "forum"
+	 * @param string $nsuri The URI for this namespace, i.e. "org.simplemachines.forum"
+	 *
+	 * @access public
+	 */
+	public function addNamespace($name, $nsuri = null)
+	{
+		self::$_namespaces[$name] = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
+	}
+
+	/**
+	 * Listen for an element in order to hook into it.
+	 *
+	 * @param string $nsuri Namespace to listen for, i.e. "site"
+	 * @param string $name Name to listen for, i.e. "my_template"
+	 * @param callback $callback Something callable, to tell when we find this element.
+	 *
+	 * @access public
+	 */
 	public function listenEmit($nsuri, $name, $callback)
 	{
-		return $this->templates->listenEmit($nsuri, $name, $callback);
+		return $this->_templatelist->listenEmit($nsuri, $name, $callback);
 	}
 
-	public function listenEmitBasic($name, $callback)
-	{
-		return $this->templates->listenEmitBasic($name, $callback);
-	}
-
-	public function callOverlays(array $name, array $ns)
-	{
-		$this->overlayCalls[] = is_array($name) ? implode('', $name) : $name . (is_array($ns) ? implode('', $ns) : $ns);
-
-		return $this->templates->callOverlays($name, $ns);
-	}
-
-	public function loadOverlay($filename)
-	{
-		$this->_overlays[] = $filename;
-	}
-
-	public function loadTemplates($filename)
+	/**
+	 * Load a template file onto the stack.
+	 *
+	 * @param string $filename The filename of a template file.
+	 *
+	 * @access public
+	 */
+	public function loadTemplate($filename)
 	{
 		$this->_templates[] = $filename;
 	}
 
-	public function addLayer($name, $namespace = 'site')
-	{
-		$this->layers[] = array($name, $namespace);
-	}
-
-	public function resetLayers()
-	{
-		$this->layers = array();
-	}
-
-	public function recompile()
-	{
-		$this->needs_compile = true;
-	}
-
-	public function addTemplate($name, $namespace = 'site')
-	{
-		$this->inside[] = array($name, $namespace);
-	}
-
+	/**
+	 * Reset the list of template files to use.
+	 *
+	 * @access public
+	 */
 	public function resetTemplates()
 	{
-		$this->inside = array();
+		$this->_templates = array();
 	}
 
-	public function addCommonVars(array $vars)
+	/**
+	 * Add a template file to be used as a layer (layers surround the templates)
+	 *
+	 * @param string $filename The filename of a template file.
+	 *
+	 * @access public
+	 */
+	public function addLayer($filename)
 	{
-		$this->common_vars = array_merge((array) $vars, $this->common_vars);
+		$this->_layers[] = array($filename);
 	}
 
-	public function addNamespace($name, $nsuri = null)
+	/**
+	 * Reset the list of layers to use.
+	 *
+	 * @access public
+	 */
+	public function resetLayers()
 	{
-		$nsuri = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
-
-		self::$namespaces[$name] = $nsuri;
+		$this->_layers = array();
 	}
 
+	/**
+	 * Tells the template engine to recompile all templates even if none have changed.
+	 *
+	 * @access public
+	 */
+	public function recompile()
+	{
+		$this->_needs_compile = $recompile;
+	}
+
+	/**
+	 * Read, compile, and call all of the template files.
+	 *
+	 * @access public
+	 */
 	public function output()
 	{
-		$this->templates->setCommonVars($this->common_vars);
-
-        $template_list = array();
-        foreach ($this->inside as $inside)
-            $template_list[] = $inside[1] . $inside[0];
-        foreach ($this->layers as $layer)
-            $template_list[] = $layer[1] . $layer[0];
-
-		$overlay_hash = substr(md5('dummy' . implode('', $this->_overlays) . implode('', $this->overlayCalls) . implode('', $template_list)), 0, 15);
+		$this->_templatelist->setCommonVars($this->_common_vars);
 
 		foreach ($this->_templates as $filename)
 		{
-			$source = $filename;
-
-			$inherited = array();
-
-			// Look for it in the inherited dirs
-			foreach ($this->inherited_dirs as $dir)
-				if (file_exists($dir . '/' . $filename . '.' . $this->extension))
-					$inherited[] = $dir . '/' . $filename . '.' . $this->extension;
-
 			// Did they give us the full path to a file? This way, we support both a common template directory and modular template directories.
 			if (file_exists($filename))
 				$source = $filename;
-			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
-				$source = $this->template_dir . '/' . $filename . '.' . $this->extension;
-			else if (!empty($inherited))
-				// Take the first inherited template and use it as our main one.
-				$source = array_pop($inherited);
-
-			$compiled = $this->compile_dir . '/.toxg.' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename) . '.' . $overlay_hash . '.php';
-
-			// Note: if overlays change, this won't work unless the overlay was touched.
-			// Normally, you'd flush the system when it needs a recompile.
-			if ($this->mtime_check && !$this->needs_compile)
+			else if (file_exists($this->_template_dir . '/' . $filename . '.' . $this->_extension))
+				$source = $this->_template_dir . '/' . $filename . '.' . $this->_extension;
+			else
 			{
-				$this->mtime = max($this->mtime, filemtime($source));
-
-				foreach ($inherited as $file)
-					$this->mtime = max($this->mtime, filemtime($file));
-
-				$this->needs_compile = !file_exists($compiled) || filemtime($compiled) <= $this->mtime;
+				// @todo: couldn't find template file!
 			}
 
-			$this->templates->addTemplate($source, $compiled, $inherited);
+			$extend_source = null;
+			$extend_compiled = null;
+			$extend_class_name = null;
+
+			if ($this->_parent_theme !== null)
+			{
+				$extend_source = $this->_parent_theme . substr(realpath($source), strlen(realpath($this->_template_dir)));
+
+				if (!file_exists($extend_source))
+					$extend_source = null;
+				else
+				{
+					$extend_class_name = 'tpl_' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $extend_source);
+					$extend_compiled = $this->_compile_dir . '/.toxg.' . $extend_class_name . '.php';
+
+					if ($this->_mtime_check && !$this->_needs_compile)
+					{
+						$this->_mtime = max($this->_mtime, filemtime($extend_source));
+
+						$this->_needs_compile = !file_exists($extend_compiled) || filemtime($extend_compiled) <= $this->_mtime;
+					}
+				}
+			}
+
+			$class_name = 'tpl_' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename);
+			$compiled = $this->_compile_dir . '/.toxg.' . $class_name . '.php';
+
+			if ($this->_mtime_check && !$this->_needs_compile)
+			{
+				$this->_mtime = max($this->_mtime, filemtime($source));
+
+				$this->_needs_compile = !file_exists($compiled) || filemtime($compiled) <= $this->_mtime;
+			}
+
+			// Add the extended file before the file we want, so that it doesn't choke on extending a non-existent class
+			if ($extend_source !== null)
+				$this->_templatelist->addTemplate($extend_source, $extend_compiled, $extend_class_name);
+
+			$this->_templatelist->addTemplate($source, $compiled, $class_name, $extend_class_name);
 		}
 
-		foreach ($this->_overlays as $filename)
+		if ($this->_needs_compile)
 		{
-			$full = $filename;
-
-			if (file_exists($filename))
-				$full = $filename;
-			else if (file_exists($this->template_dir . '/' . $filename . '.' . $this->extension))
-				$full = $this->template_dir . '/' . $filename . '.' . $this->extension;
-
-			if ($this->mtime_check)
-				$this->mtime = max($this->mtime, filemtime($full));
-			$this->templates->addOverlays(array($full));
+//			StandardElements::useIn($this->_templatelist);
+			$this->_templatelist->setNamespaces(self::$_namespaces);
+			$this->_templatelist->compileAll();
 		}
 
-		if ($this->needs_compile)
-		{
-			StandardElements::useIn($this->templates);
-			$this->templates->setNamespaces(self::$namespaces);
-			$this->templates->compileAll();
-		}
-
-		$this->templates->loadAll();
+		$this->_templatelist->loadAll();
 
 		foreach ($this->layers as $layer)
 			$this->callTemplate($layer[0], 'above', $layer[1]);
 
-		foreach ($this->inside as $inside)
+		foreach ($this->_templates as $template)
 		{
 			$this->callTemplate($inside[0], 'above', $inside[1]);
 			$this->callTemplate($inside[0], 'below', $inside[1]);
 		}
 
 		$reversed = array_reverse($this->layers);
+
 		foreach ($reversed as $layer)
 			$this->callTemplate($layer[0], 'below', $layer[1]);
 	}
 
-	protected function callTemplate($name, $side, $nsuri = 'site')
+	/**
+	 * Call a template
+	 *
+	 * @param string $nsuri Namespace of the template to call (i.e. "org.simplemachines.forum")
+	 * @param string $name Name of the template to call (i.e. "users_table")
+	 * @param string $side The side to call, 'above' 'below' or 'both'
+	 *
+	 * @access protected
+	 */
+	protected function _callTemplate($nsuri, $name, $side)
 	{
-		$func = Expression::makeTemplateName(self::$namespaces[$nsuri], $name . '--toxg-direct') . '_' . $side;
-		$func($this->template_params);
+		Compiler::callTemplate($nsuri, $name, $side);
 	}
 
-	public static function getNamespace($name)
+	/**
+	 * Find the namespace URI (i.e. "org.simplemachines.forum") for a given namespace.
+	 *
+	 * @param string $namespace The namespace to look for.
+	 * @return string The namespace URI for this namespace.
+	 *
+	 * @access public
+	 */
+	public static function getNamespace($namespace)
 	{
-		return self::$namespaces[$name];
+		return self::$_namespaces[$namespace];
 	}
 }

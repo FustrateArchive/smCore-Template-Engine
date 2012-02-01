@@ -1,124 +1,165 @@
 <?php
 
+/**
+ * TemplateList
+ *
+ * @package smCore Template Engine
+ * @author Steven "Fustrate" Hoffman
+ * @license MPL 1.1
+ * @version 0.1 Alpha 1
+ */
+
 namespace smCore\TemplateEngine;
 
 class TemplateList
 {
 	protected $builder = null;
-	protected $prebuilder = null;
-	protected $overlays = array();
 	protected $namespaces = array();
 	protected $common_vars = array();
-	protected $debugging = true;
+	protected $debugging = false;
 	protected $templates = array();
-	protected $overlayCalls = array();
+	protected $template_objects = array();
 
-	public function __construct($builder = null)
+	/**
+	 * Constructor
+	 *
+	 * @return smCore\TemplateEngine\TemplateList
+	 * @access public
+	 */
+	public function __construct()
 	{
-		$this->builder = $builder;
 	}
 
-	public function callOverlays(array $overlays, array $ns)
-	{
-		$overlays = (array) $overlays;
-		$ns = (array) $ns;
-
-		foreach ($overlays as $k => $overlay)
-			$this->overlayCalls[] = $ns[$k] . ':' . $overlay;
-	}
-
-	public function addOverlays(array $files)
-	{
-		foreach ($files as $file)
-			$this->overlays[] = $file;
-	}
-
+	/**
+	 * Set the namespaces to use in these templates
+	 *
+	 * @param 
+	 * @return 
+	 * @access public
+	 */
 	public function setNamespaces(array $uris)
 	{
 		$this->namespaces = $uris;
 	}
 
+	/**
+	 * Set the common variables to use in these templates
+	 *
+	 * @param array $names An array of variable names
+	 * @access public
+	 */
 	public function setCommonVars(array $names)
 	{
 		$this->common_vars = $names;
 	}
 
-	public function setDebugging($enabled = true)
+	/**
+	 * Tell the compiler to emit debugging code
+	 *
+	 * @param boolean $enabled True to enable debugging, false to disable
+	 * @access public
+	 */
+	public function setDebugging($debugging = true)
 	{
-		$this->debugging = (boolean) $enabled;
+		$this->debugging = (boolean) $debugging;
 	}
 
-	public function listenEmit($nsuri, $name, $callback)
+	/**
+	 * Add a callback to call when an element is found
+	 *
+	 * @param string $ns
+	 * @param string $name
+	 * @param callback $callback
+	 *
+	 * @access public
+	 */
+	public function listenEmit($ns, $name, $callback)
 	{
 		if ($this->builder === null)
 			$this->builder = new Builder();
 
-		$this->builder->listenEmit($nsuri, $name, $callback);
+		$this->builder->listenEmit($ns, $name, $callback);
 	}
 
-	public function listenEmitBasic($name, $callback)
-	{
-		return $this->listenEmit(Template::TPL_NAMESPACE, $name, $callback);
-	}
-
-	public function addTemplate($source_file, $cache_file, array $inherited_files = array())
+	/**
+	 * Add a template to the template list
+	 *
+	 * @param string $source_file The source file name
+	 * @param string $cache_file The cache file name
+	 * @param string $class_name The class name that this template will be saved under
+	 * @param string $extend_file An array of filenames that can be inherited from
+	 *
+	 * @access public
+	 */
+	public function addTemplate($source_file, $cache_file, $class_name, $extend_class_name = null)
 	{
 		$this->templates[] = array(
 			'source_file' => $source_file,
 			'cache_file' => $cache_file,
-			'inherited_files' => $inherited_files,
+			'class_name' => $class_name,
+			'extend_class_name' => $extend_class_name,
 		);
 	}
 
-	protected function setupTemplate($template)
+	/**
+	 * Set up a compiler for this template
+	 *
+	 * @param array $template A template from the internal list
+	 * @return smCore\TemplateEngine\Compiler
+	 * @access protected
+	 */
+	protected function _setupCompiler($template)
 	{
-		$object = $this->createTemplate($template['source_file']);
-		
-		foreach ($template['inherited_files'] as $file)
-			$object->addInheritedFile($file);
+		$compiler = new Compiler($template, $this->builder);
 
-		$object->callOverlays($this->overlayCalls);
-		$object->addOverlays($this->overlays);
-		$object->setNamespaces($this->namespaces);
-		$object->setCommonVars($this->common_vars);
-		$object->setDebugging($this->debugging);
-		$object->setPrebuilder($this->prebuilder);
+		$compiler->setNamespaces($this->namespaces);
+		$compiler->setCommonVars($this->common_vars);
+		$compiler->setDebugging($this->debugging);
 
-		return $object;
+		return $compiler;
 	}
 
-	protected function createTemplate($source_file)
-	{
-		return new Template($source_file, $this->builder);
-	}
-
+	/**
+	 * Run through each of the files and compile it to a cache file
+	 *
+	 * @access public
+	 */
 	public function compileAll()
 	{
 		if ($this->builder === null)
 			$this->builder = new Builder();
-		if ($this->prebuilder === null)
-			$this->prebuilder = new Prebuilder();
 
 		$templates = array();
-		foreach ($this->templates as $k => $template)
-			$templates[$k] = $this->setupTemplate($template);
 
+		// Create a Compiler object for each template array
+		foreach ($this->templates as $k => $template)
+			$templates[$k] = $this->_setupCompiler($template);
+
+		// Now loop through and tokenize/validate them all before we...
 		foreach ($templates as $template)
 		{
 			$template->prepareCompile();
 			$template->compileFirstPass();
 		}
 
+		// ...output code!
 		foreach ($this->templates as $k => $template)
 		{
-			if ($template['cache_file'] !== false)
-				$templates[$k]->compileSecondPass($template['cache_file']);
+			$templates[$k]->compileSecondPass($template['cache_file']);
 		}
 	}
 
+	/**
+	 * Load all template files and initialize them
+	 *
+	 * @access public
+	 */
 	public function loadAll()
 	{
 		foreach ($this->templates as $template)
+		{
 			include_once($template['cache_file']);
+			$this->template_objects['class_name'] = new $template['class_name'];
+		}
 	}
 }
