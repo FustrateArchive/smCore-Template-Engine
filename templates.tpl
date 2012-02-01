@@ -6,6 +6,7 @@
 	</tpl:block></head>
 	<body><tpl:block name="site:body">
 		Hello World
+		<thisGoes:straightThrough because="the namespace isn't recognized" />
 		<tpl:foreach from="{$context.nums}" as="{$num}">
 			<!-- Inside, has to be template call -->
 			<site:rounded>{$num}</site:rounded>

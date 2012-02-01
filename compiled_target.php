@@ -15,11 +15,12 @@ class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends smCore
 		parent::__construct();
 
 		// 'namespace:name' => array('method_name', 'what it does based on where tpl:content is'),
+		// Valid values are 'before', 'after', 'beforecontent', 'aftercontent', 'aroundcontent', 'replace'
 		$this->_usesBlocks(array(
-			'site:head' => array('site_head', 'prepend'),
-			'site:body' => array('site_head', 'append'),
-			'site:footer' => array('site_head', 'both'),
-			'site:title' => array('site_head', 'replace'),
+			'site:head' => array('site_head', 'before'),
+			'site:body' => array('site_body', 'after'),
+			'site:footer' => array('site_footer', 'aftercontent'),
+			'site:title' => array('site_title', 'replace'),
 		);
 
 		// 'namespace:name' => array('required', 'attributes'),
@@ -36,6 +37,8 @@ class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends smCore
 <html>
 	<head>';
 
+		// @todo: start block code
+		
 
 		echo '
 		<title>Blocks: ';
@@ -47,15 +50,13 @@ class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends smCore
 
 		echo '</title>';
 
-
-
+		// @todo: end block code
 
 		echo '
 	</head>
 	<body>';
 
-
-
+		// @todo: start block code
 
 		echo '
 		Hello World';
@@ -81,6 +82,8 @@ class Templates__home_fustrate_public_html_dev_toxg_templates_tpl extends smCore
 
 	public function output__below(&$__toxg_params = array())
 	{
+		// @todo: end block code
+
 		extract($__toxg_params, EXTR_SKIP);
 		$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array('__toxg_args', '__toxg_argstack', '__toxg_stack', '__toxg_params', '__toxg_func', '__toxg_error_handler')));
 	}

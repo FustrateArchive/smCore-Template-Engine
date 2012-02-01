@@ -19,6 +19,7 @@ class Parser
 
 	protected $_listeners = array();
 	protected $_templates = array();
+	protected $_blocks = array();
 
 	protected $_tree = array();
 	protected $_inside_cdata = false;
@@ -38,7 +39,7 @@ class Parser
 	}
 
 	/**
-	 * 
+	 * Set the namespaces we'll recognize in the source
 	 *
 	 * @param array $namespaces
 	 *
@@ -304,6 +305,13 @@ class Parser
 	{
 	}
 
+	/**
+	 * Pushes tags onto the tree and handles a few special cases.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _parseTag(Token $token)
 	{
 		// For a couple of these, we do special stuff.
@@ -328,6 +336,13 @@ class Parser
 		$this->_fire('parsedElement', $token);
 	}
 
+	/**
+	 * Makes sure we have tags to close and close the right tags.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _parseTagEnd(Token $token)
 	{
 		if (empty($this->_tree))
@@ -441,6 +456,10 @@ class Parser
 		if (isset($this->_templates[$fqname]))
 			$token->toss('tpl_template_duplicate_name', $ns . ':' . $name);
 
+		// Templates can't take the name of an existing block
+		if (isset($this->_blocks[$fqname]))
+			$token->toss('tpl_templates_duplicate_block_name', $ns . ':' . $name);
+
 		$this->_templates[$fqname] = true;
 
 		$this->_state = 'template';
@@ -458,29 +477,90 @@ class Parser
 		$this->_state = 'outside';
 	}
 
+	/**
+	 * <tpl:content /> tokens split template files and templates. Make sure they're empty.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _handleTagContent(Token $token)
 	{
 		// Doesn't make sense for these to have content, so warn.
-		if ($token->type === 'tag-start')
+		if ($token->type !== 'tag-empty')
 			$token->toss('tpl_content_must_be_empty');
 	}
 
+	/**
+	 * Handle a <tpl:output value="" /> token. Make sure it has what it needs.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _handleTagOutput(Token $token)
 	{
-		if ($token->type === 'tag-start')
+		if ($token->type !== 'tag-empty')
 			$token->toss('tpl_output_must_be_empty');
+
 		if (!isset($token->attributes['value']))
 			$token->toss('generic_tpl_missing_required', 'value', $token->prettyName(), 'value');
 
 		// Default the escape parameter just like {$x} does.
 		if (!isset($token->attributes['escape']))
-			$token->attributes['escape'] = $this->_inside_cdata ? 'false' : 'true';
+			$token->attributes['escape'] = $this->_inside_cdata ? 'false' : ($this->_escape !== 'inherit' ? $this->_escape === 'true' : 'true');
 	}
 
+	/**
+	 * Handle the start of a block definition.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _handleTagBlock(Token $token)
 	{
+		if (empty($token->attributes['name']))
+			$token->toss('tpl_block_missing_name');
+
+		if (strpos($token->attributes['name'], ':') === false)
+			$token->toss('tpl_block_name_without_ns', $token->attributes['name']);
+
+		// Figure out the namespace and validate it.
+		list ($ns, $name) = explode(':', $token->attributes['name'], 2);
+
+		if (empty($ns) || empty($name))
+			$token->toss('generic_tpl_no_ns_or_name');
+
+		$nsuri = $token->getNamespace($ns);
+
+		if ($nsuri === false)
+			$token->toss('tpl_block_name_unknown_ns', $ns);
+
+		if (strlen($name) === 0)
+			$token->toss('tpl_block_name_empty_name', $token->attributes['name']);
+
+		// This is the fully-qualified name, which can/should not be duplicated.
+		$fqname = $nsuri . ':' . $name;
+
+		// Blocks can't be redefined in the same file
+		if (isset($this->_blocks[$fqname]))
+			$token->toss('tpl_block_duplicate_name', $ns . ':' . $name);
+
+		// Blocks can't take the name of an existing template
+		if (isset($this->_templates[$fqname]))
+			$token->toss('tpl_block_duplicate_template_name', $ns . ':' . $name);
+
+		$this->_templates[$fqname] = true;
 	}
 
+	/**
+	 * Handle the end of a block definition.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
 	protected function _handleTagBlockEnd(Token $token)
 	{
 	}

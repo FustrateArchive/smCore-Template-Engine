@@ -119,8 +119,8 @@ class Source
 	{
 		if (isset($this->_namespaces[$name]))
 			return $this->_namespaces[$name];
-		else
-			return false;
+
+		return false;
 	}
 
 	public function readToken()
@@ -248,6 +248,7 @@ class Source
 
 		// Must be namespaced or not interesting, so bail early if obviously not.
 		$ns_mark = $this->_firstPosOf(':', 1);
+
 		if ($ns_mark !== false)
 		{
 			$ns = mb_substr($this->_data_buffer, $this->_data_pos + 1, $ns_mark - $this->_data_pos - 1);
@@ -256,7 +257,8 @@ class Source
 			if ($ns[0] === '/')
 				$ns = mb_substr($ns, 1);
 
-			if (!self::validNCName($ns))
+			// If the namespace doesn't exist, treat it as content.
+			if (!self::validNCName($ns) || $this->getNamespace($ns) === false)
 				$ns = false;
 		}
 		else
