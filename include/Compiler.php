@@ -81,6 +81,7 @@ class Compiler
 	 *
 	 * @param 
 	 * @return smCore\TemplateEngine\Parser
+	 *
 	 * @access protected
 	 */
 	protected function _createParser($source_file)
@@ -103,18 +104,22 @@ class Compiler
 	 * On the first pass, we create all of the tokens and validate their structure. This includes
 	 * finding all block and template definitions so we know what's what when we output code.
 	 *
+	 * @return array Data about the source we just parsed.
+	 *
 	 * @access public
 	 */
 	public function compileFirstPass()
 	{
 		$this->_parser->parse();
 
-		$templates = $this->_parser->getTemplatesDefined();
-		$blocks = $this->_parser->getBlocksDefined();
+		return array(
+			'templates' => $this->_parser->getTemplatesDefined(),
+			'blocks' => $this->_parser->getBlocksDefined(),
+		);
 	}
 
 	/**
-	 * On the second pass, we put the compiled template together and save it
+	 * On the second pass, we put the compiled template together and save it.
 	 *
 	 * @access public
 	 */

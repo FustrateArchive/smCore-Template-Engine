@@ -449,18 +449,15 @@ class Parser
 		if (strlen($name) === 0)
 			$token->toss('tpl_template_name_empty_name', $token->attributes['name']);
 
-		// This is the fully-qualified name, which can/should not be duplicated.
-		$fqname = $nsuri . ':' . $name;
-
 		// Templates can't be redefined in the same file
-		if (isset($this->_templates[$fqname]))
+		if (isset($this->_templates[$token->attributes['name']]))
 			$token->toss('tpl_template_duplicate_name', $ns . ':' . $name);
 
 		// Templates can't take the name of an existing block
-		if (isset($this->_blocks[$fqname]))
+		if (isset($this->_blocks[$token->attributes['name']]))
 			$token->toss('tpl_templates_duplicate_block_name', $ns . ':' . $name);
 
-		$this->_templates[$fqname] = true;
+		$this->_templates[$token->attributes['name']] = true;
 
 		$this->_state = 'template';
 	}
@@ -540,18 +537,15 @@ class Parser
 		if (strlen($name) === 0)
 			$token->toss('tpl_block_name_empty_name', $token->attributes['name']);
 
-		// This is the fully-qualified name, which can/should not be duplicated.
-		$fqname = $nsuri . ':' . $name;
-
 		// Blocks can't be redefined in the same file
-		if (isset($this->_blocks[$fqname]))
+		if (isset($this->_blocks[$token->attributes['name']]))
 			$token->toss('tpl_block_duplicate_name', $ns . ':' . $name);
 
 		// Blocks can't take the name of an existing template
-		if (isset($this->_templates[$fqname]))
+		if (isset($this->_templates[$token->attributes['name']]))
 			$token->toss('tpl_block_duplicate_template_name', $ns . ':' . $name);
 
-		$this->_templates[$fqname] = true;
+		$this->_blocks[$token->attributes['name']] = true;
 	}
 
 	/**

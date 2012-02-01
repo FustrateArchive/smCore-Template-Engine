@@ -11,6 +11,9 @@
 <!---
 	Make sure you define this namespace somewhere, even if it's for another module, using
 	$theme->addNamespace('undefined_ns', null, false); or else it will be output as content.
+
+	If we don't find anything under the name "undefined_ns:whatever" after the first compile pass, we
+	assume it's a block usage for a block that doesn't exist - therefore it is skipped.
 --->
 <undefined_ns:whatever>
 	Add this before the rest of the block.<br />

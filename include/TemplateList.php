@@ -135,14 +135,16 @@ class TemplateList
 		foreach ($this->templates as $k => $template)
 			$templates[$k] = $this->_setupCompiler($template);
 
-		// Now loop through and tokenize/validate them all before we...
+		// Now loop through and tokenize/validate them all
 		foreach ($templates as $template)
 		{
 			$template->prepareCompile();
-			$template->compileFirstPass();
+			$data = $template->compileFirstPass();
+
+			// @todo: check $data for overridden templates, duplicate block names
 		}
 
-		// ...output code!
+		// And finally, put everything together
 		foreach ($this->templates as $k => $template)
 		{
 			$templates[$k]->compileSecondPass($template['cache_file']);
