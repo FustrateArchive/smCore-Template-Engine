@@ -2,6 +2,22 @@
 
 ini_set('display_errors', 1);
 
+set_exception_handler(function($exception)
+{
+	echo '<h1>Exception Thrown</h1>
+
+<strong>Message:</strong> ' . $exception->getMessage() . '<br />
+<br />
+<strong>File:</strong> ' . $exception->getFile() . '<br />
+<br />
+<strong>Line:</strong> ' . $exception->getLine() . '<br />
+<br />
+<strong>Trace:</strong><br />
+<pre style="background: #eaeaea; border: 1px solid #555; padding: .5em; overflow: scroll; max-height: 300px;">' . print_r($exception->getTrace(), true) . '</pre>';
+
+	die();
+});
+
 include_once(__DIR__ . '/include/index.php');
 
 class testTheme extends smCore\TemplateEngine\Theme

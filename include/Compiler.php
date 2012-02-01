@@ -79,13 +79,25 @@ class Compiler
 	}
 
 	/**
+	 * Creates a new Parser object
+	 *
+	 * @param 
+	 * @return smCore\TemplateEngine\Parser
+	 * @access protected
+	 */
+	protected function _createParser($source_file)
+	{
+		return new Parser($source_file);
+	}
+
+	/**
 	 * Do stuff before we compile anything
 	 *
 	 * @access public
 	 */
 	public function prepareCompile()
 	{
-		$this->parser = $this->createParser($this->source['source_file']);
+		$this->parser = $this->_createParser($this->_source['source_file']);
 		$this->parser->setNamespaces($this->_namespaces);
 	}
 
