@@ -270,7 +270,7 @@ class Builder
 				{
 					$this->_flushOutputCode();
 					$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
-					$this->emitCode('$this->_fireBlock(\'' . $token->attributes['name'] . '\', $__tpl_params);');
+					$this->emitCode('$this->_fireBlockListener(\'' . $token->attributes['name'] . '\', $__tpl_params);');
 					$this->emitCode('extract($__tpl_params, EXTR_OVERWRITE);');
 					$this->_defer_level++;
 				}
@@ -359,7 +359,7 @@ class Builder
 				// If we're not inside a string already, start one with debug info.
 				if (!$in_string)
 				{
-					if ($node['token'] !== null) // && $this->_emitDebugPos($node['token']))
+					if ($node['token'] !== null && $this->_emitDebugPos($node['token']))
 						$first = true;
 
 					$this->_emitCodeInternal(($first ? 'echo ' : ', ') . '\'');
@@ -428,7 +428,8 @@ class Builder
 		if (realpath($file) != false)
 			$file = realpath($file);
 
-		$this->_flushOutputCode();
+		if ($type === 'echo')
+			$this->emitCode(';');
 
 		// This triggers the error system to remap the caller's file/line with the specified.
 		if (!$force)
@@ -674,9 +675,10 @@ class Builder
 			$this->emitCode('}', $token);
 	}
 
-	protected function emitTemplateStart($escaped_name, Token $token)
+	protected function emitTemplateStart($name, Token $token)
 	{
-		$this->emitCode('function ' . $escaped_name . '(&$__toxg_params = array()) {');
+		$this->_defined_templates[] = $name;
+		$this->emitCode('function template__' . str_replace(':', '_', $name) . '(&$__toxg_params = array()) {');
 		$this->emitCode('extract($__toxg_params, EXTR_SKIP);', $token);
 
 		if ($this->debugging)
