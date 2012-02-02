@@ -211,11 +211,19 @@ class Source
 		if ($this->_firstPosOf('--->') === $this->_data_pos)
 		{
 			$this->_wait_comment = false;
-			return $this->_makeToken('comment-end', mb_strlen('--->'));
+
+			$token = $this->_makeToken('comment-end', mb_strlen('--->'));
+
+			// Eat a single newline after this comment
+			if ($this->_data_buffer[$this->_data_pos] === "\n")
+				$this->_data_pos++;
+
+			return $token;
 		}
 
 		// Find the next interesting character.
 		$next_pos = $this->_firstPosOf('--->');
+
 		if ($next_pos === false)
 			$next_pos = mb_strlen($this->_data_buffer);
 
@@ -390,7 +398,12 @@ class Source
 				$type = 'tag-start';
 		}
 
-		return $this->_makeToken($type, $end_pos - $this->_data_pos);
+		$token = $this->_makeToken($type, $end_pos - $this->_data_pos);
+
+		if ($token->nsuri === Compiler::TPL_NSURI && $token->name === 'options' && $this->_data_buffer[$this->_data_pos] === "\n")
+			$this->_data_pos++;
+
+		return $token;
 	}
 
 	protected function _makeToken($type, $chars)
@@ -398,16 +411,16 @@ class Source
 		$data = mb_substr($this->_data_buffer, $this->_data_pos, $chars);
 		$this->_data_pos += $chars;
 
-		$tok = $this->_makeTokenObject(array(
+		$token = new Token(array(
 			'file' => $this->_file,
 			'line' => $this->_line,
 			'type' => $type,
 			'data' => $data,
 			'tabs' => $this->_next_token_tabs,
-		));
+		), $this);
 
 		// If it wasn't actually a valid tag, let's go back and eat less after all.
-		if ($tok->type != $type && $tok->type == 'content' && $chars > 1)
+		if ($token->type != $type && $token->type == 'content' && $chars > 1)
 		{
 			// Backpeddle....
 			$this->_data_pos -= $chars;
@@ -419,12 +432,7 @@ class Source
 
 		// This token was now, next token will move forward as much as this token did.
 		$this->_line += mb_substr_count($data, "\n");
-		return $tok;
-	}
-
-	protected function _makeTokenObject($info)
-	{
-		return new Token($info, $this);
+		return $token;
 	}
 
 	protected function _firstPosOf($find, $offset = 0)
@@ -433,9 +441,11 @@ class Source
 
 		// Just look for each and take the lowest.
 		$find = (array) $find;
+
 		foreach ($find as $arg)
 		{
 			$found = strpos($this->_data_buffer, $arg, $this->_data_pos + $offset);
+
 			if ($found !== false && ($least === false || $found < $least))
 				$least = $found;
 		}

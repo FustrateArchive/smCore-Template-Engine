@@ -8,7 +8,7 @@
 		Hello World
 		<thisGoes:straightThrough because="the namespace isn't recognized" />
 		<tpl:foreach from="{$context.nums}" as="{$num}">
-			<!-- Inside, has to be template call -->
+			<!--- Inside, has to be template call --->
 			<site:rounded>{$num}</site:rounded>
 		</tpl:foreach>
 

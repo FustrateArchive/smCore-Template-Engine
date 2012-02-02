@@ -87,8 +87,17 @@ class Builder
 	{
 		$this->_startCacheFile($template['cache_file'], $template['class_name'], $template['extend_class_name']);
 
+		$found_non_empty_token = false;
+
+		// Until we find a real token, don't output blank content
 		foreach ($template['tokens'] as $token)
-			$this->_handleToken($token);
+		{
+			if ($found_non_empty_token || trim($token->data) !== '')
+			{
+				$found_non_empty_token = true;
+				$this->_handleToken($token);
+			}
+		}
 
 		$this->_finalize();
 	}
@@ -206,7 +215,7 @@ class Builder
 	 */
 	protected function _handleToken(Token $token)
 	{
-		if ($this->_defer_level < 1)
+		if ($this->_defer_level < 1 || ($token->nsuri === Compiler::TPL_NSURI && in_array($token->name, array('template', 'block'))))
 		{
 			switch($token->type)
 			{
@@ -237,6 +246,33 @@ class Builder
 	 */
 	protected function _handleTag(Token $token)
 	{
+		if ($token->nsuri === Compiler::TPL_NSURI)
+		{
+			if ($token->name === 'option')
+			{
+				// We don't output anything for option tags
+			}
+			else if ($token->name === 'template')
+			{
+				if ($token->type === 'tag-start')
+				{
+					$this->_defer_level++;
+				}
+				else
+				{
+					$this->_defer_level--;
+				}
+			}
+			else if ($token->name === 'block')
+			{
+			}
+			else if ($token->name === 'content')
+			{
+			}
+			else
+			{
+			}
+		}
 	}
 
 	/**
