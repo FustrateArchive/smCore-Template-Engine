@@ -28,6 +28,7 @@ class Theme
 	protected $_templatelist = null;
 	protected $_templates = array();
 	protected $_layers = array();
+	protected $_ordered_filenames = array();
 
 	protected $_parsing_doctype = 'xhtml';
 
@@ -119,14 +120,15 @@ class Theme
 	}
 
 	/**
-	 * Load a template file onto the stack.
+	 * Add a template file onto the stack.
 	 *
 	 * @param string $filename The filename of a template file.
 	 *
 	 * @access public
 	 */
-	public function loadTemplate($filename)
+	public function addTemplate($filename)
 	{
+		$this->_ordered_filenames[] = $filename;
 		$this->_templates[] = $filename;
 	}
 
@@ -138,6 +140,7 @@ class Theme
 	public function resetTemplates()
 	{
 		$this->_templates = array();
+		$this->_ordered_filenames = $this->_layers;
 	}
 
 	/**
@@ -149,7 +152,8 @@ class Theme
 	 */
 	public function addLayer($filename)
 	{
-		$this->_layers[] = array($filename);
+		$this->_ordered_filenames[] = $filename;
+		$this->_layers[] = $filename;
 	}
 
 	/**
@@ -160,6 +164,7 @@ class Theme
 	public function resetLayers()
 	{
 		$this->_layers = array();
+		$this->_ordered_filenames = $this->_templates;
 	}
 
 	/**
@@ -195,8 +200,9 @@ class Theme
 	public function output()
 	{
 		$this->_templatelist->setCommonVars($this->_common_vars);
+		$filename_classes = array();
 
-		foreach ($this->_templates as $filename)
+		foreach ($this->_ordered_filenames as $filename)
 		{
 			// Did they give us the full path to a file? This way, we support both a common template directory and modular template directories.
 			if (file_exists($filename))
@@ -204,9 +210,7 @@ class Theme
 			else if (file_exists($this->_template_dir . '/' . $filename . '.' . $this->_extension))
 				$source = $this->_template_dir . '/' . $filename . '.' . $this->_extension;
 			else
-			{
-				// @todo: couldn't find template file!
-			}
+				throw new \Exception('template_file_not_found');
 
 			$extend_source = null;
 			$extend_compiled = null;
@@ -235,6 +239,8 @@ class Theme
 			$class_name = 'Template__' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename);
 			$compiled = $this->_compile_dir . '/.compiled.' . $class_name . '.php';
 
+			$filename_classes[$filename] = $class_name;
+
 			if ($this->_mtime_check && !$this->_needs_compile)
 			{
 				$this->_mtime = max($this->_mtime, filemtime($source));
@@ -258,33 +264,19 @@ class Theme
 
 		$this->_templatelist->loadAll();
 
-		foreach ($this->layers as $layer)
-			$this->_callTemplate($layer[0], 'above', $layer[1]);
+		foreach ($this->_layers as $filename)
+			$this->_templatelist->callTemplateOutput($filename_classes[$filename], 'above', $this->_template_params);
 
-		foreach ($this->_templates as $template)
+		foreach ($this->_templates as $filename)
 		{
-			$this->_callTemplate($inside[0], 'above', $inside[1]);
-			$this->_callTemplate($inside[0], 'below', $inside[1]);
+			$this->_templatelist->callTemplateOutput($filename_classes[$filename], 'above', $this->_template_params);
+			$this->_templatelist->callTemplateOutput($filename_classes[$filename], 'below', $this->_template_params);
 		}
 
-		$reversed = array_reverse($this->layers);
+		$reversed = array_reverse($this->_layers);
 
-		foreach ($reversed as $layer)
-			$this->_callTemplate($layer[0], 'below', $layer[1]);
-	}
-
-	/**
-	 * Call a template
-	 *
-	 * @param string $nsuri Namespace of the template to call (i.e. "org.simplemachines.forum")
-	 * @param string $name Name of the template to call (i.e. "users_table")
-	 * @param string $side The side to call, 'above' 'below' or 'both'
-	 *
-	 * @access protected
-	 */
-	protected function _callTemplate($nsuri, $name, $side)
-	{
-		Compiler::callTemplate($nsuri, $name, $side);
+		foreach ($reversed as $filename)
+			$this->_templatelist->callTemplateOutput($filename_classes[$filename], 'below', $this->_template_params);
 	}
 
 	/**

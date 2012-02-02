@@ -19,6 +19,7 @@ class TemplateList
 	protected $_debugging = false;
 	protected $_templates = array();
 	protected $_loaded = false;
+	protected $_template_objects = array();
 
 	protected static $_registered_templates = array();
 
@@ -168,21 +169,22 @@ class TemplateList
 		foreach ($this->_templates as $template)
 		{
 			include_once($template['cache_file']);
-			new $template['class_name']($this);
+			$this->_template_objects[$template['class_name']] = new $template['class_name']($this);
 		}
-
-		die(var_dump(self::$_registered_templates));
 	}
 
 	/**
 	 * 
 	 *
-	 * @param 
-	 * @return 
-	 * @access 
+	 * @param string $class_name Name of the class we're calling the output function for.
+	 * @param string $side The side of the template we're calling, above or below
+	 *
+	 * @access public
 	 */
-	public function callTemplate($name)
+	public function callTemplateOutput($class_name, $side, $params)
 	{
+		$method = 'output__' . $side;
+		$this->_template_objects[$class_name]->{$method}($params);
 	}
 
 	public static function registerTemplate($name, $callback, array $required_attributes = array())
@@ -194,6 +196,10 @@ class TemplateList
 	}
 
 	public static function addBlockListener($name, $position, $callback)
+	{
+	}
+
+	public static function callTemplate($name, $side, $params)
 	{
 	}
 }

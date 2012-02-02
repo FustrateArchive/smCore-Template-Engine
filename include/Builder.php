@@ -51,6 +51,8 @@ class Builder
 	{
 		$this->_startCacheFile($template['cache_file'], $template['class_name'], $template['extend_class_name']);
 
+		foreach ($template['tokens'] as $token)
+			$this->_handleToken($token);
 
 		$this->_finalize();
 		$this->_closeCacheFile();
@@ -73,6 +75,7 @@ class Builder
 		if ($extend_class_name === null)
 			$extend_class_name = 'smCore\TemplateEngine\Template';
 
+		// Most of this stuff is dummy data to help me test
 		$this->emitCode('<?php 
 
 
@@ -82,6 +85,24 @@ class ' . $class_name . ' extends ' . $extend_class_name . '
 	{
 		parent::__construct();
 
+	}
+
+	public function output__above(&$__tpl_params)
+	{
+		extract($__tpl_params, EXTR_SKIP);
+
+		echo \'Output started for \' . __CLASS__ . \'<br />\';
+
+		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
+	}
+
+	public function output__below(&$__tpl_params)
+	{
+		extract($__tpl_params, EXTR_SKIP);
+
+		echo \'Output ended for \' . __CLASS__ . \'<br />\';
+
+		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
 	}');
 	}
 
@@ -114,6 +135,26 @@ class ' . $class_name . ' extends ' . $extend_class_name . '
 		if ($this->_data !== null && $this->_close_data)
 			@fclose($this->_data);
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/** */
+	/** */
+	/** Unfinished stuff */
+	/** */
+	/** */
 
 	// callback(Builder $builder, $type, array $attributes, Token $token)
 	public function listenEmit($nsuri, $name, $callback)

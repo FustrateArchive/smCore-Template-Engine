@@ -37,6 +37,6 @@ class testTheme extends smCore\TemplateEngine\Theme
 $theme = new testTheme(__DIR__, __DIR__, __DIR__ . '/other_theme', true);
 
 $theme->addNamespace('site', 'com.fustrate.site');
-$theme->loadTemplate('templates.tpl');
-$theme->loadTemplate('other_stuff.tpl');
+$theme->addLayer('templates.tpl');
+$theme->addTemplate('other_stuff.tpl');
 $theme->output();
