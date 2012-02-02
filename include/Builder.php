@@ -22,16 +22,14 @@ class Builder
 	protected $_defer_level = 0;
 	protected $_defer_tokens = array();
 	protected $_tpl_content = false;
+	protected $_state = 'outside';
 
 	protected $_has_emitted = false;
 	protected $_disable_emit = false;
 	protected $_emit_output = array();
 
 	protected $_last_line = 1;
-
-
 	protected $_last_file = null;
-	protected $_prebuilder = null;
 	protected $_last_template = null;
 	protected $_listeners = array();
 
@@ -145,11 +143,7 @@ class Builder
 	 */
 	protected function _finalize()
 	{
-		// We embed usage data for preloading/efficiency purposes.
-//		$usage = $this->prebuilder->getTemplateUsage();
-//		$this->emitCode($this->getUsageClassName() . '::markUsage(' . var_export($usage, true) . ');');
-
-		// !!! Emit something here for hooks?
+		// @todo: Emit something here for hooks?
 
 		// We don't emit the __construct function until the end, so that we know what templates and blocks we used.
 		$this->emitCode('
@@ -535,19 +529,6 @@ class Builder
 		// A container is just a thing to set namespaces, it does nothing.
 		// However, we have to omit something or it will think it's unrecognized.
 		$this->emitCode('');
-	}
-
-	protected function handleTagAlter(Token $token)
-	{
-		// This was already understood by the prebuilder.
-		// Let's emit nothing so it knows it was recognized.
-		$this->emitCode('');
-
-		// We never emit alters, just the alterations they make.
-		if ($token->type === 'tag-start')
-			$this->disable_emit = true;
-		elseif ($token->type === 'tag-end')
-			$this->disable_emit = false;
 	}
 
 	protected function handleTagTemplate(Token $token)

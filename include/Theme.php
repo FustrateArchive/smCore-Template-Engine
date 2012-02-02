@@ -168,11 +168,12 @@ class Theme
 	}
 
 	/**
-	 * 
+	 * Add an external callback to be called when we encounter a certain block.
 	 *
-	 * @param 
-	 * @return 
-	 * @access 
+	 * @param string $name The name of the block, i.e. "smf:post"
+	 * @param callback $callback
+	 *
+	 * @access public
 	 */
 	public function addBlockListener($name, $callback)
 	{

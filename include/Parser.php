@@ -52,19 +52,6 @@ class Parser
 	}
 
 	/**
-	 * Registers a callback to be called when a certain event is fired.
-	 *
-	 * @param string $type The type of event to listen for.
-	 * @param callback $callback The callback to call if an event of this type is fired.
-	 *
-	 * @access public
-	 */
-	public function listen($type, $callback)
-	{
-		$this->_listeners[$type][] = $callback;
-	}
-
-	/**
 	 * Insert a source into the queue to be parsed.
 	 *
 	 * @param mixed $source A Source or Token to add to the queue.
@@ -106,28 +93,6 @@ class Parser
 			$this->_parseNextSource();
 
 		$this->_verifyClosed();
-	}
-
-	/**
-	 * Fire an event to the listeners, just in case they have something to say at this point.
-	 *
-	 * @param string $type Name of the event to fire
-	 * @param smCore\TemplateEngine\Token $token The token on which this event will be fired
-	 *
-	 * @access protected
-	 */
-	protected function _fire($type, Token $token)
-	{
-		if (empty($this->_listeners[$type]))
-			return;
-
-		foreach ($this->_listeners[$type] as $callback)
-		{
-			$result = call_user_func($callback, $token, $this);
-
-			if ($result === false)
-				break;
-		}
 	}
 
 	/**
@@ -254,8 +219,6 @@ class Parser
 					$this->_inside_cdata = false;
 			}
 		}
-
-		$this->_fire('parsedContent', $token);
 	}
 
 	/**
@@ -292,9 +255,7 @@ class Parser
 	protected function _parseCDATA(Token $token, $open)
 	{
 		$this->_inside_cdata = $open;
-
 		// Pass it through as if content (still want it outputted.)
-		$this->_fire('parsedContent', $token);
 	}
 
 	/**
@@ -335,8 +296,6 @@ class Parser
 
 		if ($token->type === 'tag-start')
 			array_push($this->_tree, $token);
-
-		$this->_fire('parsedElement', $token);
 	}
 
 	/**
@@ -368,8 +327,6 @@ class Parser
 			else if ($token->name === 'block')
 				$this->_handleTagBlockEnd($token);
 		}
-
-		$this->_fire('parsedElement', $token);
 	}
 
 	/**
@@ -566,9 +523,9 @@ class Parser
 	/**
 	 * Get the tokens this parser found
 	 *
-	 * @param 
-	 * @return 
-	 * @access 
+	 * @return array An array of the tokens found by this parser.
+	 *
+	 * @access public
 	 */
 	public function getTokens()
 	{

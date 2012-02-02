@@ -1,4 +1,4 @@
-<tpl:options doctype="html" /><!--- This line is optional and would be removed from output. --->
+<tpl:options yes doctype="html" /><!--- This line is optional and would be removed from output. --->
 <!DOCTYPE html>
 <html>
 	<head><tpl:block name="site:head">

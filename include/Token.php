@@ -24,130 +24,140 @@ class Token
 	public $name = '';
 	public $attributes = array();
 
-	protected $data_pos = 0;
-	protected $data_len = 0;
-	protected $source = null;
+	protected $_data_pos = 0;
+	protected $_data_len = 0;
+	protected $_source = null;
 
 	public function __construct(array $token, Source $source)
 	{
-		$this->source = $source;
+		$this->_source = $source;
 
 		$this->data = $token['data'];
-		$this->data_len = strlen($this->data);
+		$this->_data_len = mb_strlen($this->data);
 		$this->type = $token['type'];
 		$this->file = $token['file'];
 		$this->line = $token['line'];
 		$this->tabs = str_repeat("\t", $token['tabs']);
 
-		$this->parseData();
+		$this->_parseData();
 	}
 
-	protected function parseData()
+	/**
+	 * If this is a tag token, we'll want to parse it
+	 *
+	 * @access protected
+	 */
+	protected function _parseData()
 	{
-		switch ($this->type)
-		{
-		case 'tag-end':
-			$this->parseEnd();
-			break;
-
-		case 'tag-start':
-		case 'tag-empty':
-			$this->parseStart();
-			break;
-
-		default:
-			// Anything else, we don't do additional work on.
-		}
+		if ($this->type === 'tag-start' || $this->type === 'tag-empty')
+			$this->_parseStart();
+		else if ($this->type === 'tag-end')
+			$this->_parseEnd();
 	}
 
-	public function getNamespace($name)
+	/**
+	 * Parse a start or empty tag token
+	 *
+	 * @access protected
+	 */
+	protected function _parseStart()
 	{
-		return $this->source->getNamespace($name);
-	}
-
-	public function prettyName()
-	{
-		return $this->ns . ':' . $this->name;
-	}
-
-	public function toss($id_message)
-	{
-		// For error messages, we always really want after the newline, anyway.
-		if (!empty($this->data) && $this->data[0] === "\n")
-			$this->line += strspn($this->data, "\n");
-
-		$params = func_get_args();
-		$params = array_slice($params, 1);
-
-		throw new \Exception($id_message);
-	}
-
-	protected function parseStart()
-	{
-		$this->data_pos = 1;
-		list ($this->ns, $this->name) = $this->parseName();
+		$this->_data_pos = 1;
+		list ($this->ns, $this->name) = $this->_parseName();
 
 		// Parse the attributes which don't have any name specified, mainly for shortcuts
-		$this->parseSingleAttribute($this->data_pos);
+		$this->_parseSingleAttribute($this->_data_pos);
 
-		while ($this->parseAttribute())
+		while ($this->_parseAttribute())
 			continue;
 
-		$this->setNamespace();
+		$this->_setNamespace();
 
 		// A start tag will be 1 from end, empty tag 2 from end (/>)...
 		$end_offset = $this->type == 'tag-start' ? 1 : 2;
 
-		if ($this->data_pos < strlen($this->data) - $end_offset)
+		if ($this->_data_pos < strlen($this->data) - $end_offset)
 			$this->toss('syntax_invalid_tag');
 	}
 
-	protected function parseSingleAttribute($pos = 0)
+	/**
+	 * NFI what this does. I haven't gotten it to go past the third code line.
+	 *
+	 * @param int $pos 
+	 * @return boolean
+	 *
+	 * @access protected
+	 */
+	protected function _parseSingleAttribute($pos = 0)
 	{
-		$start_quote = $this->firstPosOf('"', $this->data_pos - $pos);
+		$start_quote = $this->_firstPosOf('"', $this->_data_pos - $pos);
+
 		if ($start_quote === false || $this->data[$start_quote - 1] == '=')
 			return false;
+
 		$start_part = substr($this->data, 0, $start_quote);
 		$end_part = substr($this->data, $start_quote);
 
 		$this->data = $start_part . 'default=' . $end_part;
+
 		return true;
 	}
 
-	protected function parseEnd()
+	/**
+	 * Parse an end tag token
+	 *
+	 * @access protected
+	 */
+	protected function _parseEnd()
 	{
-		$this->data_pos = 2;
-		list ($this->ns, $this->name) = $this->parseName();
+		// Skip </
+		$this->_data_pos = 2;
+		list ($this->ns, $this->name) = $this->_parseName();
 
-		$this->setNamespace();
+		$this->_setNamespace();
 
-		if ($this->data_pos < strlen($this->data) - 1)
+		if ($this->_data_pos < strlen($this->data) - 1)
 			$this->toss('syntax_invalid_tag_end');
 	}
 
-	protected function setNamespace()
+	/**
+	 * Set the namespace URI of this token based on its namespace. Also check for content masquerading as a tag.
+	 *
+	 * @access protected
+	 */
+	protected function _setNamespace()
 	{
 		if ($this->ns !== '')
-			$this->nsuri = $this->source->getNamespace($this->ns);
+			$this->nsuri = $this->_source->getNamespace($this->ns);
 
 		// If we don't have a namespace, this is XHTML.
 		if ($this->nsuri === false)
 			$this->type = 'content';
 	}
 
-	protected function parseName()
+	/**
+	 * Parse the namespace and name of this token or attribute, i.e. array("site", "box") or array("", "name")
+	 *
+	 * @return array 
+	 *
+	 * @access protected
+	 */
+	protected function _parseName()
 	{
 		// None of these are valid name chars, but they all end the name.
-		$after_name = $this->firstPosOf(array(' ', "\t", "\r", "\n", '=', '/', '>', '}'));
+		$after_name = $this->_firstPosOf(array(' ', "\t", "\r", "\n", '=', '/', '>', '}'));
+
 		if ($after_name === false)
 			$this->toss('syntax_name_unterminated');
 
-		$ns_mark = $this->firstPosOf(':');
+		$ns_mark = $this->_firstPosOf(':');
+
 		if ($ns_mark !== false && $ns_mark < $after_name)
 		{
-			$ns = $this->eatUntil($ns_mark);
+			$ns = $this->_eatUntil($ns_mark);
+
 			// Skip the : after the namespace.
-			$this->data_pos++;
+			$this->_data_pos++;
 
 			if (!Source::validNCName($ns))
 				$this->toss('syntax_name_ns_invalid');
@@ -155,54 +165,80 @@ class Token
 		else
 			$ns = '';
 
-		$name = $this->eatUntil($after_name);
+		$name = $this->_eatUntil($after_name);
+
 		if (!Source::validNCName($name))
 			$this->toss('syntax_name_invalid');
 
-		$this->eatWhite();
+		$this->_eatWhite();
+
 		return array($ns, $name);
 	}
 
-	protected function parseAttribute()
+	/**
+	 * Try to parse an attribute at the current position in the token
+	 *
+	 * @return boolean Whether or not we could parse an attribute here
+	 *
+	 * @access protected
+	 */
+	protected function _parseAttribute()
 	{
-		$after_name = $this->firstPosOf('=');
+		$after_name = $this->_firstPosOf('=');
 
 		if ($after_name === false)
 			return false;
 
-		list ($ns, $name) = $this->parseName();
+		list ($ns, $name) = $this->_parseName();
 
-		if ($this->data[$this->data_pos] !== '=')
-			$this->toss('syntax_attr_value_missing');
+		// If it doesn't have a value, it's a boolean attribute
+		if ($this->data[$this->_data_pos] !== '=')
+		{
+			$this->_saveAttribute($ns, $name, true);
+		}
+		else
+		{
+			$this->_data_pos++;
 
-		$this->data_pos++;
+			$quote_type = $this->data[$this->_data_pos];
 
-		$quote_type = $this->data[$this->data_pos];
+			if ($this->data[$this->_data_pos] !== '\'' && $this->data[$this->_data_pos] !== '"')
+				$this->toss('syntax_attr_value_not_quoted');
 
-		if ($this->data[$this->data_pos] !== '\'' && $this->data[$this->data_pos] !== '"')
-			$this->toss('syntax_attr_value_not_quoted');
+			$this->_data_pos++;
 
-		$this->data_pos++;
+			// Look for the same quote mark at the end of the value.
+			$end_quote = $this->_firstPosOf($quote_type);
 
-		// Look for the same quote mark at the end of the value.
-		$end_quote = $this->firstPosOf($quote_type);
+			if ($end_quote === false)
+				$this->toss('syntax_attr_value_unterminated');
 
-		if ($end_quote === false)
-			$this->toss('syntax_attr_value_unterminated');
+			// Grab the value, and then skip the end quote.
+			$this->_saveAttribute($ns, $name, $this->_eatUntil($end_quote));
+			$this->_data_pos++;
+		}
 
-		// Grab the value, and then skip the end quote.
-		$this->saveAttribute($ns, $name, $this->eatUntil($end_quote));
-		$this->data_pos++;
+		$this->_eatWhite();
 
-		$this->eatWhite();
 		return true;
 	}
 
-	protected function saveAttribute($ns, $name, $value)
+	/**
+	 * Set a namespace via a token... gotta change this.
+	 *
+	 * @todo: DON'T DO THIS - maybe use tpl:options instead, or don't do it at all
+	 *
+	 * @param string $ns
+	 * @param string $name
+	 * @param string $value
+	 *
+	 * @access protected
+	 */
+	protected function _saveAttribute($ns, $name, $value)
 	{
 		// !!! This sets it for the rest of the document, which is wrong, but it's usually fine.
 		if ($ns === 'xmlns')
-			$this->source->addNamespace($name, $value);
+			$this->_source->addNamespace($name, $value);
 		else if ($ns === '')
 			$this->attributes[$name] = $value;
 		else
@@ -213,37 +249,61 @@ class Token
 		}
 	}
 
-	protected function eatWhite()
+	/**
+	 * Advance the pointer until we find something that's not a space, tab, CR, or LF
+	 *
+	 * @access protected
+	 */
+	protected function _eatWhite()
 	{
-		while ($this->data_pos < $this->data_len)
+		while ($this->_data_pos < $this->_data_len)
 		{
-			$c = ord($this->data[$this->data_pos]);
+			$c = ord($this->data[$this->_data_pos]);
 
-			// Okay, found whitespace (space, tab, CR, LF, etc.)
+			// Okay, found whitespace (space, tab, CR, LF)
 			if ($c != 32 && $c != 9 && $c != 10 && $c != 13)
 				break;
 
-			$this->data_pos++;
+			$this->_data_pos++;
 		}
 	}
 
-	protected function eatUntil($pos)
+	/**
+	 * Advance the pointer to a certain position, and return the data advanced past
+	 *
+	 * @param int $pos The data position to advance to
+	 * @return string The data that was advanced past
+	 *
+	 * @access protected
+	 */
+	protected function _eatUntil($pos)
 	{
-		$data = substr($this->data, $this->data_pos, $pos - $this->data_pos);
-		$this->data_pos = $pos;
+		$data = mb_substr($this->data, $this->_data_pos, $pos - $this->_data_pos);
+		$this->_data_pos = $pos;
 
 		return $data;
 	}
 
-	protected function firstPosOf($find, $offset = 0)
+	/**
+	 * Find the first position of an array of strings
+	 *
+	 * @param array $find An array of strings to search for
+	 * @param int $offset The location in the data to start searching
+	 * @return mixed Integer location of the first found string, false if nothing was found.
+	 *
+	 * @access protected
+	 */
+	protected function _firstPosOf($find, $offset = 0)
 	{
 		$least = false;
 
 		// Just look for each and take the lowest.
 		$find = (array) $find;
+
 		foreach ($find as $arg)
 		{
-			$found = strpos($this->data, $arg, $this->data_pos + $offset);
+			$found = strpos($this->data, $arg, $this->_data_pos + $offset);
+
 			if ($found !== false && ($least === false || $found < $least))
 				$least = $found;
 		}
@@ -251,26 +311,49 @@ class Token
 		return $least;
 	}
 
-	public function createInject($type, $ns, $name, array $attributes = array())
+	/**
+	 * Find the nsuri for a namespace
+	 *
+	 * @param string $name The namespace to look for
+	 * @return mixed A string nsuri if it was found, otherwise false
+	 *
+	 * @access public
+	 */
+	public function getNamespace($name)
 	{
-		$token = clone $this;
-		$token->data = '{tpl:auto-token /}';
+		return $this->_source->getNamespace($name);
+	}
 
-		$token->type = $type;
-		$token->name = $name;
-		$token->attributes = $attributes;
+	/**
+	 * Return a "pretty" name for this token, such as "site:box"
+	 *
+	 * @return string The pretty token name
+	 *
+	 * @access public
+	 */
+	public function prettyName()
+	{
+		return $this->ns . ':' . $this->name;
+	}
 
-		if ($ns === false)
-		{
-			$token->ns = 'tpl';
-			$token->nsuri = Compiler::TPL_NSURI;
-		}
-		else
-		{
-			$token->ns = $ns;
-			$token->setNamespace();
-		}
+	/**
+	 * Toss an exception from this token
+	 *
+	 * @todo restore full exceptions
+	 *
+	 * @param string $key
+	 *
+	 * @access public
+	 */
+	public function toss($key)
+	{
+		// For error messages, we always really want after the newline, anyway.
+		if (!empty($this->data) && $this->data[0] === "\n")
+			$this->line += strspn($this->data, "\n");
 
-		return $token;
+		$params = func_get_args();
+		$params = array_slice($params, 1);
+
+		throw new \Exception($key);
 	}
 }
