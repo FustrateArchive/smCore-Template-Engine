@@ -49,6 +49,11 @@ abstract class Template
 		}
 	}
 
+	protected function _fireBlockListener($name, $parameters)
+	{
+		TemplateList::fireBlockListener($name, $parameters);
+	}
+
 	/**
 	 * Tell the TemplateList that this template file "owns" certain template names
 	 *

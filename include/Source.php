@@ -135,7 +135,7 @@ class Source
 		// We may have a stream, an array of already-parsed tokens, or a string.
 		if (is_resource($this->_data))
 			return $this->_readStreamToken();
-		elseif (is_array($this->_data))
+		else if (is_array($this->_data))
 			return $this->_readArrayToken();
 		else
 			return $this->_readStringToken();
@@ -193,7 +193,9 @@ class Source
 			return $this->_readTagToken();
 
 		case '{':
-			return $this->_readCurlyToken();
+			// Don't capture things like javascript's "var something = {};"
+			if ($this->_data_buffer[$this->_data_pos + 1] != '}')
+				return $this->_readCurlyToken();
 
 		case ']':
 			if ($this->_firstPosOf(']]>') === $this->_data_pos)
@@ -290,7 +292,7 @@ class Source
 		// We support {$var}, {#lang}, and {tpl:stuff /}.
 		if ($next_c === '$')
 			$type = 'var-ref';
-		elseif ($next_c === '#')
+		else if ($next_c === '#')
 			$type = 'lang-ref';
 		else
 		{
@@ -308,11 +310,11 @@ class Source
 
 				if (!self::validNCName($ns))
 					$ns = false;
-				elseif ($this->_data_buffer[$ns_mark + 1] === ':')
+				else if ($this->_data_buffer[$ns_mark + 1] === ':')
 					$type = 'var-ref';
 				// What we're checking here is that we don't have this: {key:'value'}...
 				// Or in other words, after the : we need an alphanumeric char or similar.
-				elseif (!self::validNCName($this->_data_buffer[$ns_mark + 1]))
+				else if (!self::validNCName($this->_data_buffer[$ns_mark + 1]))
 					$ns = false;
 			}
 			else
@@ -392,7 +394,7 @@ class Source
 			if ($this->_data_buffer[$end_pos - 2] === '/')
 				$type = 'tag-empty';
 			// And... obviously, if the second char is a /, it's an end tag.
-			elseif ($this->_data_buffer[$this->_data_pos + 1] === '/')
+			else if ($this->_data_buffer[$this->_data_pos + 1] === '/')
 				$type = 'tag-end';
 			else
 				$type = 'tag-start';
@@ -464,6 +466,7 @@ class Source
 		// If there are any other chars left, then it wasn't valid.
 		if (trim($ns, $rest_chars) !== '')
 			return false;
+
 		if (mb_strlen($ns) == 0 || trim($ns[0], $first_char) !== '')
 			return false;
 

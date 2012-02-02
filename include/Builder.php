@@ -265,6 +265,19 @@ class Builder
 			}
 			else if ($token->name === 'block')
 			{
+				// When we hit a block, we both call it and defer its data.
+				if ($token->type === 'tag-start')
+				{
+					$this->_flushOutputCode();
+					$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
+					$this->emitCode('$this->_fireBlock(\'' . $token->attributes['name'] . '\', $__tpl_params);');
+					$this->emitCode('extract($__tpl_params, EXTR_OVERWRITE);');
+					$this->_defer_level++;
+				}
+				else
+				{
+					$this->_defer_level--;
+				}
 			}
 			else if ($token->name === 'content')
 			{
@@ -428,13 +441,6 @@ class Builder
 
 		return true;
 	}
-
-
-
-
-
-
-
 
 
 

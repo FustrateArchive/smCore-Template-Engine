@@ -22,6 +22,7 @@ class TemplateList
 	protected $_template_objects = array();
 
 	protected static $_registered_templates = array();
+	protected static $_block_listeners = array();
 
 	/**
 	 * Constructor
@@ -197,6 +198,31 @@ class TemplateList
 
 	public static function addBlockListener($name, $position, $callback)
 	{
+		// Replacements overwrite all previous listeners, but can be added onto later.
+		if ($position === 'replace')
+			self::$_block_listeners[$name] = array('replace' => $callback);
+		else
+			self::$_block_listeners[$name][$position][] = $callback;
+	}
+
+	public static function fireBlockListener($name, $parameters)
+	{
+		if (!empty(self::$_block_listeners[$name]))
+		{
+			// We do above, then replacement, then below
+			if (!empty(self::$_block_listeners[$name]['above']))
+				foreach (self::$_block_listeners[$name]['above'] as $listener)
+				{
+				}
+
+			// There's only ever one "replace" listener, and it always exists since we're firing from a definition
+			$listener = self::$_block_listeners[$name]['replace'];
+
+			if (!empty(self::$_block_listeners[$name]['below']))
+				foreach (self::$_block_listeners[$name]['below'] as $listener)
+				{
+				}
+		}
 	}
 
 	public static function callTemplate($name, $side, $params)
