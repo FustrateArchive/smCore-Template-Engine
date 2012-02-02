@@ -19,6 +19,10 @@ class Builder
 	protected $_data = null;
 	protected $_close_data = false;
 
+	protected $_defer_level = 0;
+	protected $_defer_tokens = array();
+	protected $_tpl_content = 
+
 	protected $_last_file = null;
 	protected $_last_line = 1;
 	protected $_prebuilder = null;
@@ -32,21 +36,47 @@ class Builder
 	{
 	}
 
+	/**
+	 * Make sure PHP closes open resources when exiting
+	 *
+	 * @access public
+	 */
 	public function __destruct()
 	{
 		$this->_closeCacheFile();
 	}
 
-	public function setDebugging($enabled)
+	/**
+	 * Tell the Builder to output debug code into the compiled classes or not
+	 *
+	 * @param boolean $debugging  
+	 *
+	 * @access public
+	 */
+	public function setDebugging($debugging)
 	{
-		$this->_debugging = (boolean) $enabled;
+		$this->_debugging = (boolean) $debugging;
 	}
 
+	/**
+	 * Set the variable names that are available in all templates and blocks
+	 *
+	 * @param array $names Variable names, i.e. array('context', 'post')
+	 *
+	 * @access public
+	 */
 	public function setCommonVars(array $names)
 	{
 		$this->_common_vars = $names;
 	}
 
+	/**
+	 * Start writing the compiled class file, then handle the tokens, then close the class file
+	 *
+	 * @param array $template Template data (cache file, class name, tokens, etc.) from TemplateList
+	 *
+	 * @access public
+	 */
 	public function build($template)
 	{
 		$this->_startCacheFile($template['cache_file'], $template['class_name'], $template['extend_class_name']);
@@ -58,7 +88,16 @@ class Builder
 		$this->_closeCacheFile();
 	}
 
-	protected function _startCacheFile($cache_file, $class_name, $extend_class_name)
+	/**
+	 * Start the file and class
+	 *
+	 * @param string $cache_file Where to save this compiled class file
+	 * @param string $class_name The name of the class to output
+	 * @param string $extend_class_name Another class to extend, other than smCore\TemplateEngine\Template
+	 *
+	 * @access protected
+	 */
+	protected function _startCacheFile($cache_file, $class_name, $extend_class_name = null)
 	{
 		if (is_resource($cache_file))
 			$this->_data = $cache_file;
@@ -76,15 +115,12 @@ class Builder
 			$extend_class_name = 'smCore\TemplateEngine\Template';
 
 		// Most of this stuff is dummy data to help me test
-		$this->emitCode('<?php 
-
-
-class ' . $class_name . ' extends ' . $extend_class_name . '
-{
+		$this->emitCode('<?php class ' . $class_name . ' extends ' . $extend_class_name . ' {
 	public function __construct()
 	{
 		parent::__construct();
 
+		// @todo: register templates and block usage
 	}
 
 	public function output__above(&$__tpl_params)
@@ -115,10 +151,7 @@ class ' . $class_name . ' extends ' . $extend_class_name . '
 		// !!! Emit something here for hooks?
 
 		// Just end the file now.
-		$this->emitCode('
-}
-
-?>');
+		$this->emitCode('} ?>');
 
 		if ($this->_close_data)
 			fclose($this->_data);
@@ -136,8 +169,28 @@ class ' . $class_name . ' extends ' . $extend_class_name . '
 			@fclose($this->_data);
 	}
 
+	/**
+	 * Handles each token in order, deferring when necessary.
+	 *
+	 * @param 
+	 * @return 
+	 * @access 
+	 */
+	protected function _handleToken(Token $token)
+	{
+		if ($this->_defer_level < 1)
+		{
+			
+		}
+		else
+		{
+			$this->_defer_tokens[] = $token;
+		}
+	}
 
-
+	protected function _handleTokenContent(Token $token)
+	{
+	}
 
 
 
@@ -179,6 +232,7 @@ class ' . $class_name . ' extends ' . $extend_class_name . '
 			return;
 
 		$listeners = $this->listeners[$nsuri][$name];
+
 		foreach ($listeners as $callback)
 		{
 			// We don't use call_user_func because we want to allow by reference passing.
@@ -186,7 +240,6 @@ class ' . $class_name . ' extends ' . $extend_class_name . '
 				$result = $callback($this, $token->type, $token->attributes, $token);
 			elseif (!is_string($callback[0]))
 				$result = $callback[0]->$callback[1]($this, $token->type, $token->attributes, $token);
-			// !!! Breaks PHP 5.1 and 5.2 to call these directly.
 			else
 				$result = call_user_func($callback, $this, $token->type, $token->attributes, $token);
 

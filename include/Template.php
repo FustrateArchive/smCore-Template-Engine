@@ -16,9 +16,7 @@ class Template
 	/**
 	 * Create a new Template object.
 	 *
-	 * @param 
-	 * @return 
-	 * @access 
+	 * @access public
 	 */
 	public function __construct()
 	{
@@ -85,9 +83,7 @@ class Template
 	 *
 	 * @access public
 	 */
-	public function output__above(&$__toxg_params = array())
-	{
-	}
+	abstract public function output__above(&$__toxg_params = array());
 
 	/**
 	 * Method to output the template's bottom part, if it had a <tpl:content />. Redefined in child classes.
@@ -96,7 +92,5 @@ class Template
 	 *
 	 * @access public
 	 */
-	public function output__below(&$__toxg_params = array())
-	{
-	}
+	abstract public function output__below(&$__toxg_params = array());
 }
