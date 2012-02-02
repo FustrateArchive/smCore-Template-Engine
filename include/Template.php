@@ -11,7 +11,7 @@
 
 namespace smCore\TemplateEngine;
 
-class Template
+abstract class Template
 {
 	/**
 	 * Create a new Template object.

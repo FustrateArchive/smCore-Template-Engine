@@ -13,7 +13,7 @@ namespace smCore\TemplateEngine;
 
 class Builder
 {
-	protected $_debugging = true;
+	protected $_debugging = false;
 	protected $_common_vars = array();
 
 	protected $_data = null;
@@ -21,15 +21,18 @@ class Builder
 
 	protected $_defer_level = 0;
 	protected $_defer_tokens = array();
-	protected $_tpl_content = 
+	protected $_tpl_content = false;
 
-	protected $_last_file = null;
-	protected $_last_line = 1;
-	protected $_prebuilder = null;
-	protected $_last_template = null;
 	protected $_has_emitted = false;
 	protected $_disable_emit = false;
 	protected $_emit_output = array();
+
+	protected $_last_line = 1;
+
+
+	protected $_last_file = null;
+	protected $_prebuilder = null;
+	protected $_last_template = null;
 	protected $_listeners = array();
 
 	public function __construct()
@@ -43,7 +46,10 @@ class Builder
 	 */
 	public function __destruct()
 	{
-		$this->_closeCacheFile();
+		if (is_resource($this->_data))
+			fclose($this->_data);
+
+		$this->_data = null;
 	}
 
 	/**
@@ -85,7 +91,6 @@ class Builder
 			$this->_handleToken($token);
 
 		$this->_finalize();
-		$this->_closeCacheFile();
 	}
 
 	/**
@@ -116,32 +121,19 @@ class Builder
 
 		// Most of this stuff is dummy data to help me test
 		$this->emitCode('<?php class ' . $class_name . ' extends ' . $extend_class_name . ' {
-	public function __construct()
-	{
-		parent::__construct();
 
-		// @todo: register templates and block usage
-	}
-
-	public function output__above(&$__tpl_params)
+	public function output__above(&$__tpl_params = array())
 	{
 		extract($__tpl_params, EXTR_SKIP);
 
-		echo \'Output started for \' . __CLASS__ . \'<br />\';
-
-		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
+		');
 	}
 
-	public function output__below(&$__tpl_params)
-	{
-		extract($__tpl_params, EXTR_SKIP);
-
-		echo \'Output ended for \' . __CLASS__ . \'<br />\';
-
-		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
-	}');
-	}
-
+	/**
+	 * Finish up, by emitting the __construct function and closing the class.
+	 *
+	 * @access protected
+	 */
 	protected function _finalize()
 	{
 		// We embed usage data for preloading/efficiency purposes.
@@ -150,18 +142,38 @@ class Builder
 
 		// !!! Emit something here for hooks?
 
-		// Just end the file now.
-		$this->emitCode('} ?>');
+		// We don't emit the __construct function until the end, so that we know what templates and blocks we used.
+		$this->emitCode('
 
-		if ($this->_close_data)
-			fclose($this->_data);
+		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
+	}
+	public function output__below(&$__tpl_params = array())
+	{
+		extract($__tpl_params, EXTR_SKIP);
 
-		$this->_data = null;
+
+		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
+	}
+
+	public function __construct()
+	{
+		parent::__construct();
+
+		// @todo: register templates and block usage
+	}
+} ?>');
+
+		$this->_closeCacheFile();
 
 		if ($this->_last_template !== null)
 			throw new Exception('builder_unclosed_template');
 	}
 
+	/**
+	 * Close the cache file resource if it's open
+	 *
+	 * @access public
+	 */
 	public function _closeCacheFile()
 	{
 		// Release the file so it isn't left open until the request end.
@@ -170,17 +182,45 @@ class Builder
 	}
 
 	/**
+	 * Write a string to the cache resource
+	 *
+	 * @param string $string The string to write to the cache resource
+	 *
+	 * @access protected
+	 */
+	protected function _fwrite($string)
+	{
+		if ($string === '')
+			return;
+
+		if (@fwrite($this->_data, $string) === false)
+			throw new \Exception('builder_cannot_write');
+	}
+
+	/**
 	 * Handles each token in order, deferring when necessary.
 	 *
-	 * @param 
-	 * @return 
-	 * @access 
+	 * @param smCore\TemplateEngine\Token
+	 *
+	 * @access protected
 	 */
 	protected function _handleToken(Token $token)
 	{
 		if ($this->_defer_level < 1)
 		{
-			
+			switch($token->type)
+			{
+				case 'tag-empty':
+				case 'tag-start':
+				case 'tag-end':
+					$this->_handleTag($token);
+					break;
+				case 'content':
+					$this->_handleContent($token);
+					break;
+				default:
+					break;
+			}
 		}
 		else
 		{
@@ -188,9 +228,173 @@ class Builder
 		}
 	}
 
-	protected function _handleTokenContent(Token $token)
+	/**
+	 * Do something with a start, empty, or end tag token.
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
+	protected function _handleTag(Token $token)
 	{
 	}
+
+	/**
+	 * Output content straight to the compiled class
+	 *
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access protected
+	 */
+	protected function _handleContent(Token $token)
+	{
+		$this->emitOutputString($token->data, $token);
+	}
+
+	public function emitCode($code, Token $token = null)
+	{
+		$this->_has_emitted = true;
+
+		if ($this->_disable_emit)
+			return;
+
+		$this->_flushOutputCode();
+
+		if ($this->_debugging && $token !== null)
+			$this->_emitDebugPos($token);
+
+		$this->_emitCodeInternal($code);
+	}
+
+	public function emitOutputString($data, Token $token = null)
+	{
+		$this->_has_emitted = true;
+
+		if ($this->_disable_emit)
+			return;
+
+		$this->_emit_output[] = array(
+			'type' => 'string',
+			'data' => $data,
+			'token' => $token,
+		);
+	}
+
+	public function emitOutputParam($expr, Token $token = null)
+	{
+		$this->_has_emitted = true;
+
+		if ($this->_disable_emit)
+			return;
+
+		$this->_emit_output[] = array(
+			'type' => 'param',
+			'data' => $expr,
+			'token' => $token,
+		);
+	}
+
+	protected function _flushOutputCode()
+	{
+		if (empty($this->_emit_output))
+			return;
+
+		// We're going to enter and exit strings.
+		$in_string = false;
+		$first = true;
+
+		foreach ($this->_emit_output as $node)
+		{
+			if ($node['type'] === 'string')
+			{
+				// If we're not inside a string already, start one with debug info.
+				if (!$in_string)
+				{
+					if ($node['token'] !== null) // && $this->_emitDebugPos($node['token']))
+						$first = true;
+
+					$this->_emitCodeInternal(($first ? 'echo ' : ', ') . '\'');
+					$in_string = true;
+				}
+
+				$this->_emitCodeInternal(addcslashes($node['data'], "'\\"));
+			}
+			elseif ($node['type'] === 'param')
+			{
+				if ($in_string)
+				{
+					$this->_emitCodeInternal('\'');
+					$in_string = false;
+				}
+
+				// Just in case the position has changed for some reason (overlay, etc.)
+				if ($node['token'] !== null && $this->_emitDebugPos($node['token'], 'echo'))
+					$first = true;
+
+				$this->_emitCodeInternal(($first ? 'echo ' : ', ') . $node['data']);
+			}
+
+			$first = false;
+		}
+
+		if ($in_string)
+			$this->_emitCodeInternal('\'');
+
+		$this->_emitCodeInternal(';');
+
+		$this->_emit_output = array();
+	}
+
+	protected function _emitCodeInternal($code)
+	{
+		// Don't output any \r's, we use 't' mode, so those are automatic.
+		// !!!SLOW Can we remove this str_replace?  Just need to test line numbers matching on mac/linux/windows with several line ending types.
+		$this->_fwrite(str_replace("\r", '', $code));
+		$this->_last_line += substr_count($code, "\n");
+	}
+
+	protected function _emitDebugPos(Token $token, $type = 'code', $force = false)
+	{
+		// Okay, maybe we don't need to bulk up the template.  Let's see how we can get out of updating the pos.
+
+		// If the file is the same, we have a chance.
+		if ($token->file === $this->_last_file && !$force)
+		{
+			// If the line is the same as it should be, we're good.
+			if ($token->line == $this->_last_line)
+				return false;
+			else if ($token->line > $this->_last_line)
+			{
+				// If we just need a higher line number, then just print some newlines (cheaper for PHP to cache.)
+				$this->_emitCodeInternal(str_repeat("\n", $token->line - $this->_last_line));
+				return false;
+			}
+
+			// Okay, this means the line number was lower (template?) so let's go.
+		}
+
+		// In case this is actually a database "filename" or something, don't wipe it out.
+		$file = $token->file;
+
+		if (realpath($file) != false)
+			$file = realpath($file);
+
+		$this->_flushOutputCode();
+
+		// This triggers the error system to remap the caller's file/line with the specified.
+		if (!$force)
+			$this->_fwrite("\n");
+
+		$this->_fwrite($this->getErrorClassName() . '::remap(\'' . addcslashes($file, '\\\'') . '\', ' . (int) $token->line . ');');
+
+		$this->_last_file = $token->file;
+		$this->_last_line = $token->line;
+
+		return true;
+	}
+
+
+
 
 
 
@@ -228,10 +432,10 @@ class Builder
 	protected function fireActualEmit($nsuri, $name, Token $token)
 	{
 		// If there are no listeners, nothing to do.
-		if (empty($this->listeners[$nsuri]) || empty($this->listeners[$nsuri][$name]))
+		if (empty($this->_listeners[$nsuri]) || empty($this->_listeners[$nsuri][$name]))
 			return;
 
-		$listeners = $this->listeners[$nsuri][$name];
+		$listeners = $this->_listeners[$nsuri][$name];
 
 		foreach ($listeners as $callback)
 		{
@@ -243,6 +447,7 @@ class Builder
 			else
 				$result = call_user_func($callback, $this, $token->type, $token->attributes, $token);
 
+			// We keep going until we hit one that returned false
 			if ($result === false)
 				break;
 		}
@@ -250,7 +455,6 @@ class Builder
 
 	public function parsedContent(Token $token, Parser $parser)
 	{
-		$this->emitOutputString($token->data, $token);
 	}
 
 	public function parsedElement(Token $token, Parser $parser)
@@ -450,153 +654,6 @@ class Builder
 		}
 
 		$this->emitCode('}', $token);
-	}
-
-	public function emitCode($code, Token $token = null)
-	{
-		$this->has_emitted = true;
-		if ($this->disable_emit)
-			return;
-
-		$this->flushOutputCode();
-
-		if ($this->debugging && $token !== null)
-			$this->emitDebugPos($token);
-
-		$this->emitCodeInternal($code);
-	}
-
-	public function emitOutputString($data, Token $token = null)
-	{
-		$this->has_emitted = true;
-		if ($this->disable_emit)
-			return;
-
-		$this->emit_output[] = array(
-			'type' => 'string',
-			'data' => $data,
-			'token' => $token,
-		);
-	}
-
-	public function emitOutputParam($expr, Token $token = null)
-	{
-		$this->has_emitted = true;
-		if ($this->disable_emit)
-			return;
-
-		$this->emit_output[] = array(
-			'type' => 'param',
-			'data' => $expr,
-			'token' => $token,
-		);
-	}
-
-	protected function flushOutputCode()
-	{
-		if (empty($this->emit_output))
-			return;
-
-		// We're going to enter and exit strings.
-		$in_string = false;
-		$first = true;
-
-		foreach ($this->emit_output as $node)
-		{
-			if ($node['type'] === 'string')
-			{
-				// If we're not inside a string already, start one with debug info.
-				if (!$in_string)
-				{
-					if ($node['token'] !== null && $this->emitDebugPos($node['token'], 'echo'))
-						$first = true;
-					$this->emitCodeInternal(($first ? 'echo ' : ', ') . '\'');
-					$in_string = true;
-				}
-
-				$this->emitCodeInternal(addcslashes($node['data'], "'\\"));
-			}
-			elseif ($node['type'] === 'param')
-			{
-				if ($in_string)
-				{
-					$this->emitCodeInternal('\'');
-					$in_string = false;
-				}
-
-				// Just in case the position has changed for some reason (overlay, etc.)
-				if ($node['token'] !== null && $this->emitDebugPos($node['token'], 'echo'))
-					$first = true;
-
-				$this->emitCodeInternal(($first ? 'echo ' : ', ') . $node['data']);
-			}
-
-			$first = false;
-		}
-
-		if ($in_string)
-			$this->emitCodeInternal('\'');
-		$this->emitCodeInternal(';');
-
-		$this->emit_output = array();
-	}
-
-	protected function emitCodeInternal($code)
-	{
-		// Don't output any \r's, we use 't' mode, so those are automatic.
-		// !!!SLOW Can we remove this str_replace?  Just need to test line numbers matching on mac/linux/windows with several line ending types.
-		$this->_fwrite(str_replace("\r", '', $code));
-		$this->_last_line += substr_count($code, "\n");
-	}
-
-	protected function emitDebugPos(Token $token, $type = 'code', $force = false)
-	{
-		// Okay, maybe we don't need to bulk up the template.  Let's see how we can get out of updating the pos.
-
-		// If the file is the same, we have a chance.
-		if ($token->file === $this->_last_file && !$force)
-		{
-			// If the line is the same as it should be, we're good.
-			if ($token->line == $this->_last_line)
-				return false;
-			elseif ($token->line > $this->_last_line)
-			{
-				// If we just need a higher line number, then just print some newlines (cheaper for PHP to cache.)
-				$this->emitCodeInternal(str_repeat("\n", $token->line - $this->_last_line));
-				return false;
-			}
-
-			// Okay, this means the line number was lower (template?) so let's go.
-		}
-
-		// In case this is actually a database "filename" or something, don't wipe it out.
-		$file = $token->file;
-
-		if (realpath($file) != false)
-			$file = realpath($file);
-
-		if ($type === 'echo')
-			$this->_fwrite(';');
-
-		// This triggers the error system to remap the caller's file/line with the specified.
-		if (!$force)
-			$this->_fwrite("\n");
-
-		$this->_fwrite($this->getErrorClassName() . '::remap(\'' . addcslashes($file, '\\\'') . '\', ' . (int) $token->line . ');');
-
-		$this->_last_file = $token->file;
-		$this->_last_line = $token->line;
-
-		return true;
-	}
-
-	protected function _fwrite($string)
-	{
-		if ($string === '')
-			return;
-
-		if (@fwrite($this->_data, $string) === false)
-			throw new \Exception('builder_cannot_write');
 	}
 
 	public function parseExpression($type, $expression, Token $token, $escape = false)
