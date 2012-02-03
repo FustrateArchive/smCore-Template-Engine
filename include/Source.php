@@ -57,7 +57,6 @@ class Source
 
 	protected $_namespaces = array();
 	protected $_wait_comment = false;
-	protected $_next_token_tabs = 0;
 
 	public function __construct($data, $file, $line = 1)
 	{
@@ -418,7 +417,6 @@ class Source
 			'line' => $this->_line,
 			'type' => $type,
 			'data' => $data,
-			'tabs' => $this->_next_token_tabs,
 		), $this);
 
 		// If it wasn't actually a valid tag, let's go back and eat less after all.
@@ -428,9 +426,6 @@ class Source
 			$this->_data_pos -= $chars;
 			return $this->_makeToken('content', 1);
 		}
-
-		// Count the tabs at the end, because we're magic like that
-		$this->_next_token_tabs = mb_strlen($data) - mb_strlen(rtrim($data, "\t"));
 
 		// This token was now, next token will move forward as much as this token did.
 		$this->_line += mb_substr_count($data, "\n");

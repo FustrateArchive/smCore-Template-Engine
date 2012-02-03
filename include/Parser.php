@@ -27,6 +27,7 @@ class Parser
 	protected $_state = 'outside';
 	protected $_doctype = 'xhtml';
 	protected $_escape = 'inherit';
+	protected $_whitespace = true;
 
 	public function __construct($source)
 	{
@@ -146,8 +147,6 @@ class Parser
 	 */
 	protected function _parseNextToken(Token $token)
 	{
-		$this->_tokens[] = $token;
-
 		switch ($token->type)
 		{
 			case 'content':
@@ -189,6 +188,11 @@ class Parser
 				$this->_parseTagEnd($token);
 				break;
 		}
+
+		// If we're stripping whitespace, get busy
+			
+
+		$this->_tokens[] = $token;
 	}
 
 	/**
@@ -198,7 +202,7 @@ class Parser
 	 *
 	 * @access protected
 	 */
-	protected function _parseContent(Token $token)
+	protected function _parseContent(Token &$token)
 	{
 		/**
 		 * In HTML mode, we need to check to go in and out of CDATA.
@@ -372,6 +376,14 @@ class Parser
 				$this->_escape = $token->attributes['escape'];
 			else
 				$token->toss('tpl_options_invalid_escape');
+		}
+
+		if (isset($token->attributes['whitespace']))
+		{
+			if ($token->attributes['whitespace'] === 'true' || $token->attributes['whitespace'] === 'false')
+				$this->_whitespace = $token->attributes['whitespace'] === 'true';
+			else
+				$token->toss('tpl_options_invalid_whitespace');
 		}
 	}
 

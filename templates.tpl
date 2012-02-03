@@ -1,12 +1,10 @@
-<tpl:options yes doctype="html" /><!--- This line is optional and would be removed from output. --->
+<tpl:options doctype="html" /><!--- This line is optional and would be removed from output. --->
 <!DOCTYPE html>
 <html>
-	<head><tpl:block name="site:head">
-		<title>Blocks: <tpl:output value="{$context.nothing |default('N/A')}" /></title>
-	</tpl:block></head>
+	<head><tpl:block name="site:head"></tpl:block>
+	</head>
 	<body><tpl:block name="site:body">
 		Hello World
-		<thisGoes:straightThrough because="the namespace isn't recognized" />
 		<tpl:foreach from="{$context.nums}" as="{$num}">
 			<!--- Inside, has to be template call --->
 			<site:rounded>{$num}</site:rounded>
@@ -15,9 +13,19 @@
 		<tpl:content />
 
 		<p>
-			More stuff after the tpl:content, but inside the body block.
+			This will be green if blocks are working.
 		</p>
 	</tpl:block>
 
 	{$context.test |default('N/A')}</body>
 </html>
+
+<site:head><tpl:parent />
+		<title>Test Block</title>
+
+		<style type="text/css">
+			p {
+				background: red;
+			}
+		</style>
+</site:head>

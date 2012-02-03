@@ -5,6 +5,10 @@
 			html {
 				background: #f5f5f5;
 				}
+			p {
+				color: #12450a;
+				font-weight: bold;
+			}
 		</style>
 </site:head>
 

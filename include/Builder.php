@@ -35,6 +35,7 @@ class Builder
 
 	// It's like a game show
 	protected $_blockOrTemplate = array();
+	protected $_defined_templates = array();
 
 	public function __construct()
 	{
@@ -87,6 +88,7 @@ class Builder
 	public function build($template)
 	{
 		$this->_startCacheFile($template['cache_file'], $template['class_name'], $template['extend_class_name']);
+		$this->_defined_templates = array();
 
 		$found_non_empty_token = false;
 
@@ -104,7 +106,7 @@ class Builder
 		$this->_finishOutput();
 
 		// Keep going through until we output everything. Blocks can be nested, which is why we loop.
-		while (!empty($this->_defer_tokens))
+//		while (!empty($this->_defer_tokens))
 		{
 			$tokens = $this->_defer_tokens;
 			$this->_defer_tokens = array();
@@ -169,7 +171,7 @@ class Builder
 	}
 
 	/**
-	 * Finish the main output functions, if we're still in them. Gives us a clean start for templates and blocks.
+	 * Finish an output, block, or template function, if we're still in one.
 	 *
 	 * @access protected
 	 */
@@ -178,11 +180,31 @@ class Builder
 		// If we never hit a tpl:content in the main part of the template, add a dummy bottom here.
 		if ($this->_state === 'output-above')
 		{
-			// Stop the output__above method and start output-below
+			// Stop the output__above method and output a blank output__below
 			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
 			$this->emitCode('public function output__below(&$__tpl_params = array()){}');
 		}
 		else if ($this->_state === 'output-below')
+		{
+			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
+		}
+		else if ($this->_state === 'block-above')
+		{
+			// Stop the __above method and output a blank __below
+			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
+			$this->emitCode('public function output__below(&$__tpl_params = array()){}');
+		}
+		else if ($this->_state === 'block-below')
+		{
+			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
+		}
+		else if ($this->_state === 'template-above')
+		{
+			// Stop the __above method and output a blank __below
+			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
+			$this->emitCode('public function output__below(&$__tpl_params = array()){}');
+		}
+		else if ($this->_state === 'template-below')
 		{
 			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
 		}
@@ -322,7 +344,7 @@ class Builder
 				// Put a slightly different token on the stack before we start deferring, for next time around
 				$insert = clone $token;
 				// Such as 'template-tag-start' or 'block-tag-end'
-				$token->type = $token->name . '-' . $token->type;
+				$insert->type = $token->name . '-' . $token->type;
 				$this->_defer_tokens[] = $insert;
 			}
 			else if ($token->name === 'block')
@@ -346,7 +368,7 @@ class Builder
 				// Put a slightly different token on the stack before we start deferring, for next time around
 				$insert = clone $token;
 				// Such as 'template-tag-start' or 'block-tag-end'
-				$token->type = 'block-' . $token->type;
+				$insert->type = 'block-' . $token->type;
 				$this->_defer_tokens[] = $insert;
 			}
 			else if ($token->name === 'content')
@@ -405,6 +427,38 @@ class Builder
 	protected function _handleContent(Token $token)
 	{
 		$this->emitOutputString($token->data, $token);
+	}
+
+	protected function _handleBlockStart(Token $token)
+	{
+		$this->emitCode('function block__' . str_replace(':', '_', $token->attributes['name']) . '__above(&$__tpl_params = array()){');
+		$this->emitCode('extract($__tpl_params, EXTR_SKIP);');
+		$this->_state = 'block-above';
+	}
+
+	protected function _handleBlockEnd(Token $token)
+	{
+		
+
+		$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
+		$this->emitCode('}');
+		$this->_state = 'outside';
+	}
+
+	protected function _handleTemplateStart(Token $token)
+	{
+		$this->_defined_templates[] = $token->attributes['name'];
+
+		$this->emitCode('function template__' . str_replace(':', '_', $token->attributes['name']) . '__above(&$__tpl_params = array()){');
+		$this->emitCode('extract($__tpl_params, EXTR_SKIP);');
+		$this->_state = 'template-above';
+	}
+
+	protected function _handleTemplateEnd(Token $token)
+	{
+		$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
+		$this->emitCode('}');
+		$this->_state = 'outside';
 	}
 
 	/**
@@ -619,6 +673,32 @@ class Builder
 		}
 	}
 
+	public function setBlockNames($block_names)
+	{
+		foreach ($block_names as $name)
+			$this->_blockOrTemplate[$name] = 'block';
+	}
+
+	public function setTemplateNames($template_names)
+	{
+		foreach ($template_names as $name)
+			$this->_blockOrTemplate[$name] = 'template';
+	}
+
+	public function parseExpression($type, $expression, Token $token, $escape = false)
+	{
+		return Expression::$type($expression, $token, $escape);
+	}
+
+	protected function getErrorClassName()
+	{
+		return 'smCore\TemplateEngine\Errors';
+	}
+
+	protected function getUsageClassName()
+	{
+		return 'smCore\TemplateEngine\Template';
+	}
 
 
 
@@ -805,42 +885,19 @@ class Builder
 		}
 	}
 
-	protected function emitTemplateEnd($last, $token)
-	{
-		// This updates the parameters for the _below function.
-		if (!$last)
-		{
-			$omit = array('\'__toxg_args\'', '\'__toxg_argstack\'', '\'__toxg_stack\'', '\'__toxg_params\'', '\'__toxg_func\'', '\'__toxg_error_handler\'');
-			$this->emitCode('$__toxg_params = compact(array_diff(array_keys(get_defined_vars()), array(' . implode(', ', $omit) . ')));', $token);
-		}
 
-		$this->emitCode('}', $token);
-	}
 
-	public function setBlockNames($block_names)
-	{
-		foreach ($block_names as $name)
-			$this->_blockOrTemplate[$name] = 'block';
-	}
 
-	public function setTemplateNames($template_names)
-	{
-		foreach ($template_names as $name)
-			$this->_blockOrTemplate[$name] = 'template';
-	}
 
-	public function parseExpression($type, $expression, Token $token, $escape = false)
-	{
-		return Expression::$type($expression, $token, $escape);
-	}
 
-	protected function getErrorClassName()
-	{
-		return 'smCore\TemplateEngine\Errors';
-	}
 
-	protected function getUsageClassName()
-	{
-		return 'smCore\TemplateEngine\Template';
-	}
+
+
+
+
+
+
+
+
+
 }
