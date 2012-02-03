@@ -19,10 +19,9 @@ class Builder
 	protected $_data = null;
 	protected $_close_data = false;
 
-	protected $_defer_level = 0;
+	protected $_state = null;
+	protected $_defer_for = null;
 	protected $_defer_tokens = array();
-	protected $_tpl_content = false;
-	protected $_state = 'outside';
 
 	protected $_has_emitted = false;
 	protected $_disable_emit = false;
@@ -31,7 +30,11 @@ class Builder
 	protected $_last_line = 1;
 	protected $_last_file = null;
 	protected $_last_template = null;
+
 	protected $_listeners = array();
+
+	// It's like a game show
+	protected $_blockOrTemplate = array();
 
 	public function __construct()
 	{
@@ -88,11 +91,26 @@ class Builder
 		$found_non_empty_token = false;
 
 		// Until we find a real token, don't output blank content
-		foreach ($template['tokens'] as $token)
+		foreach ($template['data']['tokens'] as $token)
 		{
 			if ($found_non_empty_token || trim($token->data) !== '')
 			{
 				$found_non_empty_token = true;
+				$this->_handleToken($token);
+			}
+		}
+
+		// Make sure we finish the output functions before going on to deferred stuff.
+		$this->_finishOutput();
+
+		// Keep going through until we output everything. Blocks can be nested, which is why we loop.
+		while (!empty($this->_defer_tokens))
+		{
+			$tokens = $this->_defer_tokens;
+			$this->_defer_tokens = array();
+
+			foreach ($tokens as $token)
+			{
 				$this->_handleToken($token);
 			}
 		}
@@ -134,42 +152,8 @@ class Builder
 		extract($__tpl_params, EXTR_SKIP);
 
 		');
-	}
 
-	/**
-	 * Finish up, by emitting the __construct function and closing the class.
-	 *
-	 * @access protected
-	 */
-	protected function _finalize()
-	{
-		// @todo: Emit something here for hooks?
-
-		// We don't emit the __construct function until the end, so that we know what templates and blocks we used.
-		$this->emitCode('
-
-		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
-	}
-	public function output__below(&$__tpl_params = array())
-	{
-		extract($__tpl_params, EXTR_SKIP);
-
-
-		$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));
-	}
-
-	public function __construct()
-	{
-		parent::__construct();
-
-		// @todo: register templates and block usage
-	}
-} ?>');
-
-		$this->_closeCacheFile();
-
-		if ($this->_last_template !== null)
-			throw new Exception('builder_unclosed_template');
+		$this->_state = 'output-above';
 	}
 
 	/**
@@ -182,6 +166,56 @@ class Builder
 		// Release the file so it isn't left open until the request end.
 		if ($this->_data !== null && $this->_close_data)
 			@fclose($this->_data);
+	}
+
+	/**
+	 * Finish the main output functions, if we're still in them. Gives us a clean start for templates and blocks.
+	 *
+	 * @access protected
+	 */
+	protected function _finishOutput()
+	{
+		// If we never hit a tpl:content in the main part of the template, add a dummy bottom here.
+		if ($this->_state === 'output-above')
+		{
+			// Stop the output__above method and start output-below
+			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
+			$this->emitCode('public function output__below(&$__tpl_params = array()){}');
+		}
+		else if ($this->_state === 'output-below')
+		{
+			$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\'))); }');
+		}
+
+		$this->_state = 'outside';
+	}
+
+	/**
+	 * Finish up, by emitting the __construct function and closing the class.
+	 *
+	 * @access protected
+	 */
+	protected function _finalize()
+	{
+		// @todo: Emit something here for hooks?
+
+		$this->_finishOutput();
+
+		// We don't emit the __construct function until the end, so that we know what templates and blocks we used.
+		$this->emitCode('
+
+	public function __construct()
+	{
+		parent::__construct();
+
+		// @todo: register templates and block usage
+	}
+}');
+
+		$this->_closeCacheFile();
+
+		if ($this->_last_template !== null)
+			throw new Exception('builder_unclosed_template');
 	}
 
 	/**
@@ -209,8 +243,24 @@ class Builder
 	 */
 	protected function _handleToken(Token $token)
 	{
-		if ($this->_defer_level < 1 || ($token->nsuri === Compiler::TPL_NSURI && in_array($token->name, array('template', 'block'))))
+		// If we're deferring, only a few things matter
+		if ($this->_defer_for !== null)
 		{
+			// Match up the end tag
+			if ($token->type === 'tag-end' && $token->prettyName() === $this->_defer_for['pretty_name'] && $token->attributes['name'] === $this->_defer_for['name'])
+			{
+				$this->_defer_for = null;
+				$this->_handleTag($token);
+			}
+			else
+			{
+				// Just defer this.
+				$this->_defer_tokens[] = $token;
+			}
+		}
+		else
+		{
+			// We're not deferring, so let's do stuff
 			switch($token->type)
 			{
 				case 'tag-empty':
@@ -221,13 +271,21 @@ class Builder
 				case 'content':
 					$this->_handleContent($token);
 					break;
+				case 'block-tag-start':
+					$this->_handleBlockStart($token);
+					break;
+				case 'block-tag-end':
+					$this->_handleBlockEnd($token);
+					break;
+				case 'template-tag-start':
+					$this->_handleTemplateStart($token);
+					break;
+				case 'template-tag-end':
+					$this->_handleTemplateEnd($token);
+					break;
 				default:
 					break;
 			}
-		}
-		else
-		{
-			$this->_defer_tokens[] = $token;
 		}
 	}
 
@@ -242,7 +300,7 @@ class Builder
 	{
 		if ($token->nsuri === Compiler::TPL_NSURI)
 		{
-			if ($token->name === 'option')
+			if ($token->name === 'options')
 			{
 				// We don't output anything for option tags
 			}
@@ -250,40 +308,95 @@ class Builder
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->_defer_level++;
+					// Set requirements for the token we're waiting for
+					$this->_defer_for = array(
+						'pretty_name' => $token->prettyName(),
+						'name' => $token->attributes['name'],
+					);
 				}
 				else
 				{
-					$this->_defer_level--;
+					
 				}
+
+				// Put a slightly different token on the stack before we start deferring, for next time around
+				$insert = clone $token;
+				// Such as 'template-tag-start' or 'block-tag-end'
+				$token->type = $token->name . '-' . $token->type;
+				$this->_defer_tokens[] = $insert;
 			}
 			else if ($token->name === 'block')
 			{
-				// When we hit a block, we both call it and defer its data.
 				if ($token->type === 'tag-start')
 				{
-					$this->_flushOutputCode();
-					$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
-					$this->emitCode('$this->_fireBlockListener(\'' . $token->attributes['name'] . '\', $__tpl_params);');
-					$this->emitCode('extract($__tpl_params, EXTR_OVERWRITE);');
-					$this->_defer_level++;
+					// Set requirements for the token we're waiting for
+					$this->_defer_for = array(
+						'pretty_name' => $token->prettyName(),
+						'name' => $token->attributes['name'],
+					);
 				}
 				else
 				{
-					$this->_defer_level--;
+					// Emit code to fire a listener
+					$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
+					$this->emitCode('$this->_fireBlockListener(\'' . $token->attributes['name'] . '\', $__tpl_params);');
+					$this->emitCode('extract($__tpl_params, EXTR_OVERWRITE);');
 				}
+
+				// Put a slightly different token on the stack before we start deferring, for next time around
+				$insert = clone $token;
+				// Such as 'template-tag-start' or 'block-tag-end'
+				$token->type = 'block-' . $token->type;
+				$this->_defer_tokens[] = $insert;
 			}
 			else if ($token->name === 'content')
 			{
+				if ($this->_state === 'output-above')
+				{
+					// Stop the output__above method and start output-below
+					$this->emitCode('$__tpl_params = compact(array_diff(array_keys(get_defined_vars()), array(\'__tpl_args\', \'__tpl_argstack\', \'__tpl_stack\', \'__tpl_params\', \'__tpl_func\', \'__tpl_error_handler\')));');
+					$this->emitCode('} public function output__below(&$__tpl_params = array()) {');
+					$this->emitCode('extract($__tpl_params, EXTR_SKIP);');
+
+					$this->_state = 'output-below';
+				}
+				else if ($this->_state === 'template-above')
+				{
+				}
 			}
 			else
 			{
+			}
+
+			$this->_fireEmit($token);
+
+			// If there was no emitted code, it's probably an error.
+			if ($this->has_emitted === false && $this->debugging)
+				$token->toss('unknown_tpl_element', $token->name);
+		}
+		else
+		{
+			$full_name = $token->prettyName();
+
+			if (array_key_exists($full_name, $this->_blockOrTemplate))
+			{
+				$type = $this->_blockOrTemplate[$full_name];
+
+				if ($type === 'block')
+				{
+					// It's a block event!
+				}
+				else
+				{
+					// It's a template call!
+					$this->emitCode('/** TEMPLATE CALL **/');
+				}
 			}
 		}
 	}
 
 	/**
-	 * Output content straight to the compiled class
+	 * Output content straight to the compiled file.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -294,6 +407,14 @@ class Builder
 		$this->emitOutputString($token->data, $token);
 	}
 
+	/**
+	 * Send pure code to the compiled file. Flushes the output beforehand.
+	 *
+	 * @param string $code The raw code to output unchanged
+	 * @param smCore\TemplateEngine\Token $token
+	 * 
+	 * @access public
+	 */
 	public function emitCode($code, Token $token = null)
 	{
 		$this->_has_emitted = true;
@@ -309,6 +430,14 @@ class Builder
 		$this->_emitCodeInternal($code);
 	}
 
+	/**
+	 * Add a string value to the output array, which is assembled later on.
+	 *
+	 * @param string $data
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access public
+	 */
 	public function emitOutputString($data, Token $token = null)
 	{
 		$this->_has_emitted = true;
@@ -323,6 +452,14 @@ class Builder
 		);
 	}
 
+	/**
+	 * Add a non-string value to the output array, which is assembled later on.
+	 *
+	 * @param string $expr The expression we're adding
+	 * @param smCore\TemplateEngine\Token $token
+	 *
+	 * @access public
+	 */
 	public function emitOutputParam($expr, Token $token = null)
 	{
 		$this->_has_emitted = true;
@@ -337,6 +474,11 @@ class Builder
 		);
 	}
 
+	/**
+	 * If there are strings/params in the output array, emit them and get back to a state where we can emit code.
+	 *
+	 * @access protected
+	 */
 	protected function _flushOutputCode()
 	{
 		if (empty($this->_emit_output))
@@ -362,7 +504,7 @@ class Builder
 
 				$this->_emitCodeInternal(addcslashes($node['data'], "'\\"));
 			}
-			elseif ($node['type'] === 'param')
+			else if ($node['type'] === 'param')
 			{
 				if ($in_string)
 				{
@@ -437,36 +579,23 @@ class Builder
 		return true;
 	}
 
-
-
-
-
-
-
-
-	/** */
-	/** */
-	/** Unfinished stuff */
-	/** */
-	/** */
-
 	// callback(Builder $builder, $type, array $attributes, Token $token)
 	public function listenEmit($nsuri, $name, $callback)
 	{
-		$this->listeners[$nsuri][$name][] = $callback;
+		$this->_listeners[$nsuri][$name][] = $callback;
 	}
 
-	protected function fireEmit(Token $token)
+	protected function _fireEmit(Token $token)
 	{
 		// This actually fires a whole mess of events, but easier to hook into.
 		// In this case, it's cached, so it's fairly cheap.
-		$this->fireActualEmit($token->nsuri, $token->name, $token);
-		$this->fireActualEmit('*', $token->name, $token);
-		$this->fireActualEmit($token->nsuri, '*', $token);
-		$this->fireActualEmit('*', '*', $token);
+		$this->_fireActualEmit($token->ns, $token->name, $token);
+		$this->_fireActualEmit('*', $token->name, $token);
+		$this->_fireActualEmit($token->ns, '*', $token);
+		$this->_fireActualEmit('*', '*', $token);
 	}
 
-	protected function fireActualEmit($nsuri, $name, Token $token)
+	protected function _fireActualEmit($nsuri, $name, Token $token)
 	{
 		// If there are no listeners, nothing to do.
 		if (empty($this->_listeners[$nsuri]) || empty($this->_listeners[$nsuri][$name]))
@@ -490,9 +619,18 @@ class Builder
 		}
 	}
 
-	public function parsedContent(Token $token, Parser $parser)
-	{
-	}
+
+
+
+
+
+
+
+	/** */
+	/** */
+	/** Unfinished stuff */
+	/** */
+	/** */
 
 	public function parsedElement(Token $token, Parser $parser)
 	{
@@ -507,10 +645,8 @@ class Builder
 				$this->handleTagTemplate($token);
 			elseif ($token->name === 'content')
 				$this->handleTagContent($token);
-			elseif ($token->name === 'alter')
-				$this->handleTagAlter($token);
 
-			$this->fireEmit($token);
+			$this->_fireEmit($token);
 
 			// If there was no emitted code, it's probably an error.
 			if ($this->has_emitted === false && $this->debugging)
@@ -520,7 +656,7 @@ class Builder
 		{
 			$this->handleTagCall($token);
 
-			$this->fireEmit($token);
+			$this->_fireEmit($token);
 		}
 	}
 
@@ -679,6 +815,18 @@ class Builder
 		}
 
 		$this->emitCode('}', $token);
+	}
+
+	public function setBlockNames($block_names)
+	{
+		foreach ($block_names as $name)
+			$this->_blockOrTemplate[$name] = 'block';
+	}
+
+	public function setTemplateNames($template_names)
+	{
+		foreach ($template_names as $name)
+			$this->_blockOrTemplate[$name] = 'template';
 	}
 
 	public function parseExpression($type, $expression, Token $token, $escape = false)

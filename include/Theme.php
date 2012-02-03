@@ -30,7 +30,7 @@ class Theme
 	protected $_layers = array();
 	protected $_ordered_filenames = array();
 
-	protected $_parsing_doctype = 'xhtml';
+	protected static $_build_listeners = array();
 
 	// Primary namespace definitions
 	protected static $_namespaces = array();
@@ -200,6 +200,7 @@ class Theme
 	 */
 	public function output()
 	{
+
 		$this->_templatelist->setCommonVars($this->_common_vars);
 		$filename_classes = array();
 
@@ -258,7 +259,8 @@ class Theme
 
 		if ($this->_needs_compile)
 		{
-//			StandardElements::useIn($this->_templatelist);
+			StandardElements::useIn($this->_templatelist);
+
 			$this->_templatelist->setNamespaces(self::$_namespaces);
 			$this->_templatelist->compileAll();
 		}

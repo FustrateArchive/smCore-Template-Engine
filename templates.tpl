@@ -17,5 +17,7 @@
 		<p>
 			More stuff after the tpl:content, but inside the body block.
 		</p>
-	</tpl:block></body>
+	</tpl:block>
+
+	{$context.test |default('N/A')}</body>
 </html>

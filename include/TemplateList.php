@@ -134,6 +134,8 @@ class TemplateList
 			$this->_builder = new Builder();
 
 		$templates = array();
+		$template_names = array();
+		$block_names = array();
 
 		// Create a Compiler object for each template array
 		foreach ($this->_templates as $k => $template)
@@ -145,11 +147,15 @@ class TemplateList
 		// Now loop through and tokenize/validate them all, before we get to the real compiling.
 		foreach ($templates as $k => $template)
 		{
-			$data = $templates[$k]['compiler']->prepareCompile();
+			$templates[$k]['data'] = $templates[$k]['compiler']->prepareCompile();
 
-			$templates[$k]['tokens'] = $data['tokens'];
-			// @todo: check $data for overridden templates, duplicate block names
+			// @todo: check data for overridden templates, duplicate block names
+			$block_names = array_merge($templates[$k]['data']['blocks'], $block_names);
+			$template_names = array_merge($templates[$k]['data']['templates'], $template_names);
 		}
+
+		$this->_builder->setBlockNames($block_names);
+		$this->_builder->setTemplateNames($template_names);
 
 		// And finally, put everything together
 		foreach ($templates as $template)
