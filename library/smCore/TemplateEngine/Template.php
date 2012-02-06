@@ -60,9 +60,9 @@ class Template
 	 * @param string $side
 	 * @param array $parameters8
 	 *
-	 * @access protected
+	 * @access public
 	 */
-	protected function _callTemplate($name, $side, $parameters)
+	public function callTemplate($name, $side, $parameters)
 	{
 		TemplateList::callTemplate($name, $side, $parameters);
 	}

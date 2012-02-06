@@ -221,7 +221,7 @@ class Builder
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->emitCode('function template_' . str_replace(':', '_', $token->attributes['name']) . '_' . $token->attributes['__type'] . '($context) {');
+					$this->emitCode('function template_' . str_replace(':', '_', $token->attributes['name']) . '_' . $token->attributes['__type'] . '($context) { $me = $this;');
 
 					if ($this->_debugging)
 					{
@@ -238,7 +238,7 @@ class Builder
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->emitCode('function view($context) {');
+					$this->emitCode('function view($context) { $tpl = $this;');
 				}
 				else
 				{
@@ -249,7 +249,7 @@ class Builder
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->emitCode('function layer_' . $token->attributes['__type'] . '($context) {');
+					$this->emitCode('function layer_' . $token->attributes['__type'] . '($context) { $tpl = $this;');
 				}
 				else
 				{
@@ -260,7 +260,7 @@ class Builder
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->emitCode('$this->_fireBlockEvent(\'' . $token->attributes['name'] . '\', \'' . $token->attributes['__type'] . '\', function() use (&$context) {');
+					$this->emitCode('$this->_fireBlockEvent(\'' . $token->attributes['name'] . '\', \'' . $token->attributes['__type'] . '\', function() use (&$context, $tpl) {');
 				}
 				else
 				{
@@ -271,7 +271,7 @@ class Builder
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->emitCode('function block_' . str_replace(':', '_', $token->attributes['__name']) . '_' . $token->attributes['__type'] . '($context) {');
+					$this->emitCode('function block_' . str_replace(':', '_', $token->attributes['__name']) . '_' . $token->attributes['__type'] . '($context) { $tpl = $this;');
 
 					$this->_block_refs[] = array(
 						'name' => $token->attributes['__name'],
@@ -323,10 +323,10 @@ class Builder
 				}
 
 				if ($token->type === 'tag-start' || $token->type === 'tag-empty')
-					$this->emitCode('$this->_callTemplate(\'' . $full_name . '\', \'above\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
+					$this->emitCode('$tpl->callTemplate(\'' . $full_name . '\', \'above\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
 
 				if ($token->type === 'tag-end' || $token->type === 'tag-empty')
-					$this->emitCode('$this->_callTemplate(\'' . $full_name . '\', \'below\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
+					$this->emitCode('$tpl->callTemplate(\'' . $full_name . '\', \'below\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
 			}
 			else
 			{
