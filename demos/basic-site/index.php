@@ -2,7 +2,7 @@
 
 include(dirname(__DIR__) . '/include.php');
 
-$theme = new smCore\TemplateEngine\Theme(__DIR__, __DIR__, __DIR__ . '/other_theme', true);
+$theme = new smCore\TemplateEngine\Theme(__DIR__, __DIR__, null, true);
 
 $theme->context['site_name'] = 'my site';
 
