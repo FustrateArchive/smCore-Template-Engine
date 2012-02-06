@@ -3,12 +3,22 @@
 --->
 <site:head><tpl:parent />
 		<style type="text/css">
-			html {
-				background: #f5f5f5;
+			header, footer {
+				background: #f0f0f0;
+				padding: .7em;
+				margin: 1em;
+				text-align: center;
+				}
+			#menu li {
+				display: table-cell;
+				list-style: none;
+				padding: 3px .3em;
 				}
 			#content {
-				color: #12450a;
+				clear: both;
+				color: #1e90ff;
 				font-weight: bold;
+				padding: .2em 3em;
 				}
 		</style>
 </site:head>

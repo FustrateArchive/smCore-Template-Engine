@@ -16,6 +16,8 @@
 			<h1>My Site</h1>
 		</header>
 
+		<site:menu menu="{$site_menu}" />
+
 		<div id="content">
 <tpl:content />
 		</div>

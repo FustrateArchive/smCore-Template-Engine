@@ -10,7 +10,7 @@
 	will be thrown.
 --->
 <tpl:template name="site:menu" requires="menu">
-	<ul><tpl:foreach from="{$menu}" as="{$item}">
+	<ul id="menu"><tpl:foreach from="{$menu}" as="{$item}">
 		<li{tpl:if test="{$item.active}"} class="active"{/tpl:if}>
 			<a href="{$item.link}">{$item.label}</a>
 		</li></tpl:foreach>
