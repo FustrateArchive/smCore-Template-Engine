@@ -223,7 +223,7 @@ class Theme
 
 				// @todo: Extend parent theme
 
-				$class_name = 'Template__' . preg_replace('~[^a-zA-Z0-9_-]~', '_', $filename);
+				$class_name = 'Template__' . preg_replace('~[^a-zA-Z0-9_]~', '_', $filename);
 				$compiled = $this->_compile_dir . '/.compiled.' . $class_name . '.php';
 
 				$filename_classes[$filename] = $class_name;

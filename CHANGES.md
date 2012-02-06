@@ -4,8 +4,8 @@
 
 	* Rewrite of almost the entire system, except for the tokens (Token) and tokenizer (Source).
 	* File structure is now PSR-0 compliant. Classes and their children are properly nested.
-	+ Changed filter syntax from `{$var %name:params}` to `{$var |name(params)}`.
-	- Removed the `<tpl:container>` element, as we aren't using strict XML anyways.
+	+ Changed filter syntax from {$var %name:params} to {$var |name(params)}.
+	- Removed the tpl:container element, as we aren't using strict XML anyways.
 	+ Split ambiguous template format into four types: layers, views, templates, and blocks. Each is loaded separately and has its own set of rules.
 	+ Unrecognized namespaced elements are now passed straight through to the template.
 	* Documentation, tests, and samples will need to be rewritten.
