@@ -1,7 +1,7 @@
 <?php
 
 /**
- * StandardElements
+ * Standard Elements
  *
  * @package smCore Template Engine
  * @author Steven "Fustrate" Hoffman
@@ -9,17 +9,15 @@
  * @version 0.1 Alpha 1
  */
 
-namespace smCore\TemplateEngine;
+namespace smCore\TemplateEngine\Elements;
+use smCore\TemplateEngine\Elements, smCore\TemplateEngine\Builder, smCore\TemplateEngine\Token,
+	smCore\TemplateEngine\Expression, smCore\TemplateEngine\Parser;
 
-class StandardElements
+class Standard extends Elements
 {
 	protected $template_push_level = 0;
 
-	protected function __construct()
-	{
-	}
-
-	public static function useIn($template)
+	public function setBuildListeners($template)
 	{
 		// In case any state is needed.
 		$inst = new self();
@@ -135,13 +133,13 @@ class StandardElements
 	public function tpl_element(Builder $builder, $type, array $attributes, Token $token)
 	{
 		// We don't use _requireAttributes() because we are using the ns.
-		if (empty($attributes[Compiler::TPL_NSURI . ':name']))
+		if (empty($attributes[Parser::TPL_NSURI . ':name']))
 			$token->toss('generic_tpl_empty_attr', 'tpl:name', $token->prettyName());
 
-		$name = $builder->parseExpression('stringWithVars', $attributes[Compiler::TPL_NSURI . ':name'], $token);
+		$name = $builder->parseExpression('stringWithVars', $attributes[Parser::TPL_NSURI . ':name'], $token);
 
-		if (isset($attributes[Compiler::TPL_NSURI . ':inherit']))
-			$inherit = preg_split('~[ \t\r\n]+~', $attributes[Compiler::TPL_NSURI . ':inherit']);
+		if (isset($attributes[Parser::TPL_NSURI . ':inherit']))
+			$inherit = preg_split('~[ \t\r\n]+~', $attributes[Parser::TPL_NSURI . ':inherit']);
 		else
 			$inherit = array();
 
@@ -150,7 +148,7 @@ class StandardElements
 			$args_escaped = array();
 			foreach ($attributes as $k => $v)
 			{
-				if ($k === Compiler::TPL_NSURI . ':inherit' || $k === Compiler::TPL_NSURI . ':name')
+				if ($k === Parser::TPL_NSURI . ':inherit' || $k === Parser::TPL_NSURI . ':name')
 					continue;
 
 				$k = '\'' . addcslashes(Expression::makeVarName($k), '\\\'') . '\'';
@@ -350,37 +348,5 @@ class StandardElements
 
 		// Just to match things up.
 		$this->template_push_level--;
-	}
-
-	protected function _requireEmpty(Token $token)
-	{
-		if ($token->type !== 'tag-empty')
-			$token->toss('generic_tpl_must_be_empty', $token->prettyName());
-	}
-
-	protected function _requireNotEmpty(Token $token)
-	{
-		if ($token->type === 'tag-empty')
-			$token->toss('generic_tpl_must_be_not_empty', $token->prettyName());
-	}
-
-	protected function _requireAttributes(array $reqs, array $attributes, Token $token)
-	{
-		if ($token->type === 'tag-end')
-			return;
-
-		foreach ($reqs as $req)
-		{
-			if (!isset($attributes[$req]))
-				$token->toss('generic_tpl_missing_required', $req, $token->prettyName(), implode(', ', $reqs));
-		}
-	}
-
-	protected function _defaultAttribute($name, $default, array $attributes, $type, Builder $builder, Token $token)
-	{
-		if (empty($attributes[$name]))
-			return $default;
-
-		return $builder->parseExpression($type, $attributes[$name], $token);
 	}
 }

@@ -61,43 +61,43 @@ class Expression
 			switch ($this->data[$this->data_pos])
 			{
 				case '{':
-					$this->expr .= $this->readReference();
+					$this->expr .= $this->_readReference();
 					break;
 
 				default:
-					$this->expr .= $this->readStringInterpolated();
+					$this->expr .= $this->_readStringInterpolated();
 			}
 		}
 
 		$this->validate();
 
-		return $this->getCode();
+		return $this->_getCode();
 	}
 
 	public function parseVariable($allow_lang = true)
 	{
-		$this->eatWhite();
+		$this->_eatWhite();
 
 		if ($this->data_len === 0 || $this->data[$this->data_pos] !== '{')
-			$this->toss('expression_expected_var');
+			$this->_toss('expression_expected_var');
 
-		$this->expr = $this->readReference($allow_lang);
+		$this->expr = $this->_readReference($allow_lang);
 
-		$this->eatWhite();
+		$this->_eatWhite();
 
 		if ($this->data_pos < $this->data_len)
-			$this->toss('expression_expected_var_only');
+			$this->_toss('expression_expected_var_only');
 
 		$this->validate();
 
-		return $this->getCode();
+		return $this->_getCode();
 	}
 
 	public function parseNormal($escape = false)
 	{
 		// An empty string, let's short-circuit this common case.
 		if ($this->data_len === 0)
-			$this->toss('expression_empty');
+			$this->_toss('expression_empty');
 
 		$this->escape = (boolean) $escape;
 
@@ -106,34 +106,34 @@ class Expression
 			switch ($this->data[$this->data_pos])
 			{
 				case '{':
-					$this->expr .= $this->readReference();
+					$this->expr .= $this->_readReference();
 					break;
 
 				default:
 					// !!! Maybe do more here?
-					$this->expr .= $this->readRaw();
+					$this->expr .= $this->_readRaw();
 			}
 		}
 
 		$this->validate();
 
-		return $this->getCode();
+		return $this->_getCode();
 	}
 
 	public function validate()
 	{
 		// We'll get a "[] can't be used for reading" fatal error.
 		if (preg_match('~\[\s+\]$~', $this->expr))
-			$this->toss('expression_empty_brackets');
+			$this->_toss('expression_empty_brackets');
 
 		// A dead code sandbox prevents this from causing any trouble.
 		$attempt = @eval('if(0){return (' . $this->expr . ');}');
 
 		if ($attempt === false)
-			$this->toss('expression_validation_error', array($this->expr));
+			$this->_toss('expression_validation_error', array($this->expr));
 	}
 
-	protected function getCode()
+	protected function _getCode()
 	{
 		// The raw and escape filters are special cases.
 		if (array_key_exists('raw', $this->filters))
@@ -164,29 +164,29 @@ class Expression
 			return $this->expr;
 	}
 
-	protected function readStringInterpolated()
+	protected function _readStringInterpolated()
 	{
-		$pos = $this->firstPosOf('{');
+		$pos = $this->_firstPosOf('{');
 
 		if ($pos === false)
 			$pos = $this->data_len;
 
 		// Should never happen, unless we were called wrong.
 		if ($pos === $this->data_pos)
-			$this->toss('expression_unknown_error');
+			$this->_toss('expression_unknown_error');
 
-		return $this->readString($pos);
+		return $this->_readString($pos);
 	}
 
-	protected function readReference($allow_lang = true)
+	protected function _readReference($allow_lang = true)
 	{
 		// Expect to be on a {.
 		$this->data_pos++;
 
-		$pos = $this->firstPosOf('}');
+		$pos = $this->_firstPosOf('}');
 
 		if ($pos === false)
-			$this->toss('expression_braces_unmatched');
+			$this->_toss('expression_braces_unmatched');
 
 		$data = '';
 
@@ -194,51 +194,51 @@ class Expression
 
 		if ($c === '$')
 		{
-			$data = $this->readVarRef();
+			$data = $this->_readVarRef();
 
 			if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
 			{
 				if ($this->data[$this->data_pos] === ']')
-					$this->toss('expression_brackets_unmatched');
+					$this->_toss('expression_brackets_unmatched');
 				else
-					$this->toss('expression_unknown_error');
+					$this->_toss('expression_unknown_error');
 			}
 		}
 		else if ($c === '#')
 		{
 			if ($allow_lang)
 			{
-				$data = $this->readLangRef();
+				$data = $this->_readLangRef();
 
 				if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
-					$this->toss('expression_unknown_error');
+					$this->_toss('expression_unknown_error');
 			}
 			else
-				$this->toss('expression_expected_ref_nolang');
+				$this->_toss('expression_expected_ref_nolang');
 		}
 		else
 		{
 			// This could be a static.  If it is, we have a :: later on.
-			$next = $this->firstPosOf('::');
+			$next = $this->_firstPosOf('::');
 
 			if ($next !== false && $next < $pos)
 			{
-				$data = $this->eatUntil($next) . $this->eatUntil($next + 2) . $this->readVarRef();
+				$data = $this->_eatUntil($next) . $this->_eatUntil($next + 2) . $this->_readVarRef();
 
 				if ($this->data_pos >= $this->data_len || $this->data[$this->data_pos] !== '}')
 				{
 					if ($this->data[$this->data_pos] === ']')
-						$this->toss('expression_brackets_unmatched');
+						$this->_toss('expression_brackets_unmatched');
 					else
-						$this->toss('expression_unknown_error');
+						$this->_toss('expression_unknown_error');
 				}
 			}
 			else
 			{
 				if ($allow_lang)
-					$this->toss('expression_expected_ref');
+					$this->_toss('expression_expected_ref');
 				else
-					$this->toss('expression_expected_ref_nolang');
+					$this->_toss('expression_expected_ref_nolang');
 			}
 		}
 
@@ -248,7 +248,7 @@ class Expression
 		return $data;
 	}
 
-	protected function readVarRef()
+	protected function _readVarRef()
 	{
 		/*	It looks like this: {$xyz.abc[$mno][nilla].$rpg |filter |filter($param)}
 			Which means:
@@ -269,7 +269,7 @@ class Expression
 
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '->', '}', '|'), 1);
+			$next = $this->_firstPosOf(array('[', '.', ']', '->', '}', '|'), 1);
 
 			if ($next === false)
 				$next = $this->data_len;
@@ -278,25 +278,25 @@ class Expression
 
 			if ($c === '$')
 			{
-				$name = $this->eatUntil($next);
+				$name = $this->_eatUntil($next);
 
 				if ($name === '')
-					$this->toss('expression_var_name_empty');
+					$this->_toss('expression_var_name_empty');
 
-				$built .= '$' . self::makeVarName($name);
+				$built .= '$context[\'' . self::makeVarName($name) . '\']';
 			}
 			else if ($c === '.')
 			{
 				$built .= '[';
-				$built .= $this->readVarPart($next, true);
+				$built .= $this->_readVarPart($next, true);
 				$built .= ']';
 			}
 			else if ($c === '[')
 			{
 				$built .= '[';
-				$this->eatWhite();
-				$built .= $this->readVarPart($next, false);
-				$this->eatWhite();
+				$this->_eatWhite();
+				$built .= $this->_readVarPart($next, false);
+				$this->_eatWhite();
 
 				$brackets++;
 			}
@@ -318,7 +318,7 @@ class Expression
 				// When we hit a ->, we increase the data pointer, then find the property.
 				$built .= '->';
 				$this->data_pos++;
-				$built .= $this->eatUntil($next);
+				$built .= $this->_eatUntil($next);
 			}
 			else if ($c === '}')
 			{
@@ -328,24 +328,24 @@ class Expression
 			}
 			else if ($c === '|')
 			{
-				$this->readFilter();
+				$this->_readFilter();
 			}
 			else
 			{
 				// A constant, like a class constant: {Class::CONST}.
 				// We want to grab the "C", so we take a step back and eat.
 				$this->data_pos--;
-				$built .= $this->eatUntil($next);
+				$built .= $this->_eatUntil($next);
 			}
 		}
 
 		if ($brackets != 0)
-			$this->toss('expression_brackets_unmatched');
+			$this->_toss('expression_brackets_unmatched');
 
 		return $built;
 	}
 
-	protected function readLangRef()
+	protected function _readLangRef()
 	{
 		/*	It looks like this: {#xyz.abc[$mno][nilla].$rpg |filter |filter($param)}
 			Which means:
@@ -367,7 +367,7 @@ class Expression
 
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('[', '.', ']', '}', '|', ':'), 1);
+			$next = $this->_firstPosOf(array('[', '.', ']', '}', '|', ':'), 1);
 
 			if ($next === false)
 				$next = $this->data_len;
@@ -376,20 +376,20 @@ class Expression
 
 			if ($c === '#')
 			{
-				$name = $this->eatUntil($next);
+				$name = $this->_eatUntil($next);
 
 				if ($name === '')
-					$this->toss('expression_lang_name_empty');
+					$this->_toss('expression_lang_name_empty');
 
 				$key[] = '\'' . $name . '\'';
 			}
 			else if ($c === '.')
 			{
-				$key[] = $this->readVarPart($next, false);
+				$key[] = $this->_readVarPart($next, false);
 			}
 			else if ($c === '[')
 			{
-				$key[] = $this->readVarPart($next, false);
+				$key[] = $this->_readVarPart($next, false);
 
 				$brackets++;
 			}
@@ -407,7 +407,7 @@ class Expression
 			else if ($c === ':')
 			{
 				// We're going to be greedy, now that we're pretty much starting a whole new expression.
-				$params[] = $this->readVarPart($next, false, true); 
+				$params[] = $this->_readVarPart($next, false, true); 
 			}
 			else if ($c === '}')
 			{
@@ -417,12 +417,12 @@ class Expression
 			}
 			else if ($c === '|')
 			{
-				$this->readFilter();
+				$this->_readFilter();
 			}
 		}
 
 		if ($brackets != 0)
-			$this->toss('expression_brackets_unmatched');
+			$this->_toss('expression_brackets_unmatched');
 
 		// Assemble and return
 		$expr = self::$lang_function . '(array(' . implode(',', $key) . ')';
@@ -433,7 +433,7 @@ class Expression
 		return $expr . ')';
 	}
 
-	protected function readFilter()
+	protected function _readFilter()
 	{
 		$name = '';
 		$params = array();
@@ -443,7 +443,7 @@ class Expression
 
 		while ($this->data_pos < $this->data_len)
 		{
-			$next = $this->firstPosOf(array('(', ')', '|', '}', ','), 1);
+			$next = $this->_firstPosOf(array('(', ')', '|', '}', ','), 1);
 
 			if ($next === false)
 				$next = $this->data_len;
@@ -452,14 +452,14 @@ class Expression
 
 			if ($c === '|')
 			{
-				$name = $this->eatUntil($next);
+				$name = $this->_eatUntil($next);
 
 				if ($name === '')
-					$this->toss('expression_filter_name_empty');
+					$this->_toss('expression_filter_name_empty');
 			}
 			else if ($c === '(')
 			{
-				$params[] = $this->readVarPart($next, false, true);
+				$params[] = $this->_readVarPart($next, false, true);
 			}
 			else if ($c === ')')
 			{
@@ -473,21 +473,21 @@ class Expression
 			}
 			else if ($c === ',')
 			{
-				$this->eatWhite();
+				$this->_eatWhite();
 
 				// We're going to be greedy, now that we're pretty much starting a whole new expression.
-				$params[] = $this->readVarPart($next, false, true);
+				$params[] = $this->_readVarPart($next, false, true);
 			}
 		}
 
 		$this->filters[$name] = $params;
 	}
 
-	protected function readVarPart($end, $require = false, $greedy = false)
+	protected function _readVarPart($end, $require = false, $greedy = false)
 	{
 		// If we're being greedy, don't stop at indexes.
 		if ($greedy)
-			$end = $this->firstPosOf(array(',', '|', ')', '}', ':'), 1);
+			$end = $this->_firstPosOf(array(',', '|', ')', '}', ':'), 1);
 
 		$c = $this->data[$this->data_pos];
 
@@ -503,18 +503,18 @@ class Expression
 		else if ($c === '{')
 		{
 			// Create a whole new expression, and make sure we grab everything.
-			return self::variable($this->readInnerReference(), $this->token);
+			return self::variable($this->_readInnerReference(), $this->token);
 		}
 		else
 		{
 			if ($require && $this->data_pos == $end)
-				$this->toss('expression_incomplete');
+				$this->_toss('expression_incomplete');
 
-			return $this->readString($end);
+			return $this->_readString($end);
 		}
 	}
 
-	protected function readInnerReference()
+	protected function _readInnerReference()
 	{
 		$start = $this->data_pos;
 		$brackets = 0;
@@ -535,12 +535,12 @@ class Expression
 		if ($brackets === 0)
 			return mb_substr($this->data, $start, $this->data_pos - $start);
 
-		$this->toss('inner_token_unmatched_braces');
+		$this->_toss('inner_token_unmatched_braces');
 	}
 
-	protected function readString($end)
+	protected function _readString($end)
 	{
-		$value = $this->eatUntil($end);
+		$value = $this->_eatUntil($end);
 
 		// Short circuit this one
 		if (empty($value))
@@ -552,9 +552,9 @@ class Expression
 			// Did we split inside a string literal? Try to find the rest
 			if (mb_strlen($value) === 1 || $value[0] !== mb_substr($value, -1))
 			{
-				$next = $this->firstPosOf(array($value[0]), 1);
+				$next = $this->_firstPosOf(array($value[0]), 1);
 
-				$value = mb_substr($value, 1) . $this->eatUntil($next);
+				$value = mb_substr($value, 1) . $this->_eatUntil($next);
 
 				// Skip over the ending quotation mark.
 				$this->data_pos++;
@@ -569,25 +569,25 @@ class Expression
 		return '\'' . addcslashes($value, '\\\'') . '\'';
 	}
 
-	protected function readRaw()
+	protected function _readRaw()
 	{
-		$pos = $this->firstPosOf('{');
+		$pos = $this->_firstPosOf('{');
 		if ($pos === false)
 			$pos = $this->data_len;
 
 		// Should never happen, unless we were called wrong?
 		if ($pos === $this->data_pos)
-			$this->toss('expression_unknown_error');
+			$this->_toss('expression_unknown_error');
 
-		return $this->eatUntil($pos);
+		return $this->_eatUntil($pos);
 	}
 
-	protected function toss($error, $params = array())
+	protected function _toss($error, $params = array())
 	{
-		$this->token->toss('expression_invalid_meta', $this->data, Exception::format($error, $params));
+		$this->token->_toss('expression_invalid_meta', $this->data, Exception::format($error, $params));
 	}
 
-	protected function eatWhite()
+	protected function _eatWhite()
 	{
 		while ($this->data_pos < $this->data_len)
 		{
@@ -601,7 +601,7 @@ class Expression
 		}
 	}
 
-	protected function eatUntil($pos)
+	protected function _eatUntil($pos)
 	{
 		$data = mb_substr($this->data, $this->data_pos, $pos - $this->data_pos);
 		$this->data_pos = $pos;
@@ -609,7 +609,7 @@ class Expression
 		return $data;
 	}
 
-	protected function firstPosOf($find, $offset = 0)
+	protected function _firstPosOf($find, $offset = 0)
 	{
 		$least = false;
 

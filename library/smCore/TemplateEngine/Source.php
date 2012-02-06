@@ -3,7 +3,7 @@
 /**
  * Source
  *
- * Represents the source code to a template or overlay.  Provides lexing facilities.
+ * Represents the source code to a templating file. Provides lexing facilities.
  *
  * The use of this class is to parse source into tokens, which are chunks of categorized
  * source code.  Since namespaces also change per source, it manages those as well.
@@ -21,8 +21,6 @@
  *   - tag-start:     A start tag. ({tpl:if} or <tpl:if>)
  *   - tag-empty:     An empty tag. (<tpl:if />)
  *   - tag-end:       An end tag. (</tpl:if>)
- *   - cdata-start:   Start of CDATA. (<![CDATA[)
- *   - cdata-end:     End of CDATA. (]]>)
  *   - comment-start: The start of a comment. (<!---)
  *   - comment-end:   The end of a comment. (--->)
  *   - comment:       The contents of a comment.
@@ -33,6 +31,8 @@
  * $source = new Source($data, 'filename.tpl');
  * while ($token = $source->readToken())
  *     do_something($token);
+ *
+ * This file is mostly unchanged from the original by Unknown W. Brackets.
  *
  * @package smCore Template Engine
  * @author Steven "Fustrate" Hoffman
@@ -55,7 +55,7 @@ class Source
 	protected $_file = null;
 	protected $_line = 1;
 
-	protected $_namespaces = array();
+	protected static $_namespaces = array();
 	protected $_wait_comment = false;
 
 	public function __construct($data, $file, $line = 1)
@@ -99,9 +99,9 @@ class Source
 		}
 	}
 
-	public function setNamespaces(array $namespaces)
+	public static function setNamespaces(array $namespaces)
 	{
-		$this->_namespaces = $namespaces;
+		self::$_namespaces = $namespaces;
 	}
 
 	public function __toString()
@@ -109,15 +109,10 @@ class Source
 		return __CLASS__ . ' ' . $this->_file;
 	}
 
-	public function addNamespace($name, $nsuri = null)
+	public static function getNamespace($name)
 	{
-		$this->_namespaces[$name] = is_null($nsuri) ? 'urn:ns:' . $name : $nsuri;
-	}
-
-	public function getNamespace($name)
-	{
-		if (isset($this->_namespaces[$name]))
-			return $this->_namespaces[$name];
+		if (isset(self::$_namespaces[$name]))
+			return self::$_namespaces[$name];
 
 		return false;
 	}
@@ -128,6 +123,7 @@ class Source
 		{
 			if ($this->_wait_comment !== false)
 				throw new \Exception('syntax_comment_unterminated');
+
 			return false;
 		}
 
@@ -188,22 +184,17 @@ class Source
 
 		switch ($this->_data_buffer[$this->_data_pos])
 		{
-		case '<':
-			return $this->_readTagToken();
+			case '<':
+				return $this->_readTagToken();
 
-		case '{':
-			// Don't capture things like javascript's "var something = {};"
-			if ($this->_data_buffer[$this->_data_pos + 1] != '}')
-				return $this->_readCurlyToken();
-
-		case ']':
-			if ($this->_firstPosOf(']]>') === $this->_data_pos)
-				return $this->_makeToken('cdata-end', mb_strlen(']]>'));
+			case '{':
+				// Don't capture things like javascript's "var something = {};"
+				if ($this->_data_buffer[$this->_data_pos + 1] != '}')
+					return $this->_readCurlyToken();
 
 			// Intentional fall-through, anything else after ] is fine.
-
-		default:
-			return $this->_readContent();
+			default:
+				return $this->_readContent();
 		}
 	}
 
@@ -217,7 +208,10 @@ class Source
 
 			// Eat a single newline after this comment
 			if ($this->_data_buffer[$this->_data_pos] === "\n")
+			{
 				$this->_data_pos++;
+				$this->_line++;
+			}
 
 			return $token;
 		}
@@ -235,6 +229,7 @@ class Source
 	{
 		// Find the next interesting character.
 		$next_pos = $this->_firstPosOf(array('<', '{', ']]>'), $offset);
+
 		if ($next_pos === false)
 			$next_pos = mb_strlen($this->_data_buffer);
 
@@ -243,10 +238,6 @@ class Source
 
 	protected function _readTagToken()
 	{
-		// CDATA sections toggle escaping.
-		if ($this->_firstPosOf('<![CDATA[') === $this->_data_pos)
-			return $this->_makeToken('cdata-start', mb_strlen('<![CDATA['));
-
 		// Comments can comment out commands, which won't get processed.
 		if ($this->_firstPosOf('<!---') === $this->_data_pos)
 		{
@@ -267,7 +258,8 @@ class Source
 				$ns = mb_substr($ns, 1);
 
 			// If the namespace doesn't exist, treat it as content.
-			if (!self::validNCName($ns) || $this->getNamespace($ns) === false)
+			// if (!self::validNCName($ns) || self::getNamespace($ns) === false)
+			if (!self::validNCName($ns))
 				$ns = false;
 		}
 		else
@@ -401,8 +393,11 @@ class Source
 
 		$token = $this->_makeToken($type, $end_pos - $this->_data_pos);
 
-		if ($token->nsuri === Compiler::TPL_NSURI && $token->name === 'options' && $this->_data_buffer[$this->_data_pos] === "\n")
+		if ($token->nsuri === Parser::TPL_NSURI && $token->name === 'options' && $this->_data_buffer[$this->_data_pos] === "\n")
+		{
 			$this->_data_pos++;
+			$this->_line++;
+		}
 
 		return $token;
 	}
@@ -417,7 +412,7 @@ class Source
 			'line' => $this->_line,
 			'type' => $type,
 			'data' => $data,
-		), $this);
+		));
 
 		// If it wasn't actually a valid tag, let's go back and eat less after all.
 		if ($token->type != $type && $token->type == 'content' && $chars > 1)

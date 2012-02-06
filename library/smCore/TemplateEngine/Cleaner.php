@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Prebuilder
+ * Cleaner Abstract
  *
  * Puts the tokens in the right order and adds some faux tokens along the way.
  *
@@ -13,6 +13,11 @@
 
 namespace smCore\TemplateEngine;
 
-class Prebuilder
+abstract class Cleaner
 {
+	public function __construct()
+	{
+	}
+
+	abstract public function clean(array &$tokens, $source_filename);
 }

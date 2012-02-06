@@ -116,6 +116,7 @@ class Errors
 
 			// Put the highest first so we can stop at the right one.
 			krsort($mappings);
+
 			foreach ($mappings as $from_line => $mapping)
 			{
 				// The first one we hit that's lower is the correct one (higher won't be.)

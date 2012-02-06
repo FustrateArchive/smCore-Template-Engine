@@ -1,8 +1,11 @@
 <?php
 
 /**
- * SourceFile
+ * File Source
+ *
  * Represents a file-based Source, which is what most people should be using.
+ *
+ * This file is mostly unchanged from the original by Unknown W. Brackets.
  *
  * @package smCore Template Engine
  * @author Steven "Fustrate" Hoffman
@@ -10,16 +13,17 @@
  * @version 0.1 Alpha 1
  */
 
-namespace smCore\TemplateEngine;
+namespace smCore\TemplateEngine\Source;
+use smCore\TemplateEngine\Source;
 
-class SourceFile extends Source
+class File extends Source
 {
 	// Caching will eat plenty of memory, so it may really help things.
 	const ENABLE_CACHE = false;
 	static $cached_tokens = array();
 
 	/**
-	 * Create a SourceFile out of a file path
+	 * Create a File Source out of a file path
 	 *
 	 * @param string $filename
 	 * @param int $line The line we're starting on.
@@ -61,7 +65,7 @@ class SourceFile extends Source
 	}
 
 	/**
-	 * Read a token from the data. SourceFile might also cache the tokens.
+	 * Read a token from the data. We might also cache the tokens.
 	 *
 	 * @return smCore\TemplateEngine\Token
 	 *

@@ -19,27 +19,50 @@ set_exception_handler(function($exception)
 	die();
 });
 
-include_once(__DIR__ . '/include/index.php');
+// PSR-0 autoloader, mostly compliant (enough for our purposes)
+spl_autoload_register(function($name)
+{
+	$path = str_replace('\\', '/', $name);
+
+	if (file_exists(__DIR__ . '/library/' . $path . '.php'))
+		include(__DIR__ . '/library/' . $path . '.php');
+	else
+		throw new Exception('Could not find file to autoload: ' . __DIR__ . '/library/' . $path . '.php');
+});
 
 class testTheme extends smCore\TemplateEngine\Theme
 {
 	protected $needs_compile = true;
-	public $context = array();
-
-	public function output()
-	{
-		$this->setTemplateParam('context', $this->context);
-		$this->addCommonVars(array('context'));
-		parent::output();
-	}
 }
 
 $theme = new testTheme(__DIR__, __DIR__, __DIR__ . '/other_theme', true);
 
-$theme->context['test'] = 'This should be output.';
+$theme->context['title'] = 'Welcome!';
+$theme->context['site_menu'] = array(
+	array(
+		'label' => 'Home',
+		'link' => '#',
+		'active' => true,
+	),
+	array(
+		'label' => 'About',
+		'link' => '#',
+		'active' => false,
+	),
+	array(
+		'label' => 'Stuff',
+		'link' => '#',
+		'active' => false,
+	),
+);
 
 $theme->addNamespace('site', 'com.fustrate.site');
-$theme->addLayer('templates.tpl');
-$theme->addTemplate('other_stuff.tpl');
+
+$theme->loadLayer('test_templates/main_layer.tpl');
+$theme->loadView('test_templates/home.tpl');
+
+// Stuff to use in the layers/views
+$theme->loadTemplates('test_templates/templates.tpl');
+$theme->loadBlocks('test_templates/block_refs.tpl');
 
 $theme->output();

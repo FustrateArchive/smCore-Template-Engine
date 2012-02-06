@@ -3,6 +3,8 @@
 /**
  * Token
  *
+ * This file is mostly unchanged from the original by Unknown W. Brackets.
+ *
  * @package smCore Template Engine
  * @author Steven "Fustrate" Hoffman
  * @license MPL 1.1
@@ -25,32 +27,19 @@ class Token
 
 	protected $_data_pos = 0;
 	protected $_data_len = 0;
-	protected $_source = null;
 
-	public function __construct(array $token, Source $source)
+	public function __construct(array $token, $dummy = false)
 	{
-		$this->_source = $source;
-
 		$this->data = $token['data'];
 		$this->_data_len = mb_strlen($this->data);
 		$this->type = $token['type'];
 		$this->file = $token['file'];
 		$this->line = $token['line'];
 
-		$this->_parseData();
-	}
-
-	/**
-	 * If this is a tag token, we'll want to parse it
-	 *
-	 * @access protected
-	 */
-	protected function _parseData()
-	{
 		if ($this->type === 'tag-start' || $this->type === 'tag-empty')
-			$this->_parseStart();
+			$this->_parseStart($dummy);
 		else if ($this->type === 'tag-end')
-			$this->_parseEnd();
+			$this->_parseEnd($dummy);
 	}
 
 	/**
@@ -58,10 +47,16 @@ class Token
 	 *
 	 * @access protected
 	 */
-	protected function _parseStart()
+	protected function _parseStart($dummy)
 	{
 		$this->_data_pos = 1;
 		list ($this->ns, $this->name) = $this->_parseName();
+
+		$this->_setNamespace();
+
+		// We don't need to do anything complicated for dummy tokens
+		if ($dummy)
+			return;
 
 		// Parse the attributes which don't have any name specified, mainly for shortcuts
 		$this->_parseSingleAttribute($this->_data_pos);
@@ -69,13 +64,32 @@ class Token
 		while ($this->_parseAttribute())
 			continue;
 
-		$this->_setNamespace();
-
 		// A start tag will be 1 from end, empty tag 2 from end (/>)...
 		$end_offset = $this->type == 'tag-start' ? 1 : 2;
 
 		if ($this->_data_pos < strlen($this->data) - $end_offset)
 			$this->toss('syntax_invalid_tag');
+	}
+
+	/**
+	 * Parse an end tag token
+	 *
+	 * @access protected
+	 */
+	protected function _parseEnd($dummy)
+	{
+		// Skip </
+		$this->_data_pos = 2;
+		list ($this->ns, $this->name) = $this->_parseName();
+
+		$this->_setNamespace();
+
+		// We don't need to do anything complicated for dummy tokens
+		if ($dummy)
+			return;
+
+		if ($this->_data_pos < strlen($this->data) - 1)
+			$this->toss('syntax_invalid_tag_end');
 	}
 
 	/**
@@ -102,23 +116,6 @@ class Token
 	}
 
 	/**
-	 * Parse an end tag token
-	 *
-	 * @access protected
-	 */
-	protected function _parseEnd()
-	{
-		// Skip </
-		$this->_data_pos = 2;
-		list ($this->ns, $this->name) = $this->_parseName();
-
-		$this->_setNamespace();
-
-		if ($this->_data_pos < strlen($this->data) - 1)
-			$this->toss('syntax_invalid_tag_end');
-	}
-
-	/**
 	 * Set the namespace URI of this token based on its namespace. Also check for content masquerading as a tag.
 	 *
 	 * @access protected
@@ -126,11 +123,12 @@ class Token
 	protected function _setNamespace()
 	{
 		if ($this->ns !== '')
-			$this->nsuri = $this->_source->getNamespace($this->ns);
-
+			$this->nsuri = Source::getNamespace($this->ns);
+/*
 		// If we don't have a namespace, this is XHTML.
 		if ($this->nsuri === false)
 			$this->type = 'content';
+*/
 	}
 
 	/**
@@ -222,9 +220,7 @@ class Token
 	}
 
 	/**
-	 * Set a namespace via a token... gotta change this.
-	 *
-	 * @todo: DON'T DO THIS - maybe use tpl:options instead, or don't do it at all
+	 * Save an attribute to the attributes array.
 	 *
 	 * @param string $ns
 	 * @param string $name
@@ -234,15 +230,12 @@ class Token
 	 */
 	protected function _saveAttribute($ns, $name, $value)
 	{
-		// !!! This sets it for the rest of the document, which is wrong, but it's usually fine.
-		if ($ns === 'xmlns')
-			$this->_source->addNamespace($name, $value);
-		else if ($ns === '')
+		if ($ns === '')
 			$this->attributes[$name] = $value;
 		else
 		{
 			// Namespaced attributes get the full URI for now.  We could do an object if it becomes necessary.
-			$nsuri = $this->getNamespace($ns);
+			$nsuri = Source::getNamespace($ns);
 			$this->attributes[$nsuri . ':' . $name] = $value;
 		}
 	}
@@ -310,19 +303,6 @@ class Token
 	}
 
 	/**
-	 * Find the nsuri for a namespace
-	 *
-	 * @param string $name The namespace to look for
-	 * @return mixed A string nsuri if it was found, otherwise false
-	 *
-	 * @access public
-	 */
-	public function getNamespace($name)
-	{
-		return $this->_source->getNamespace($name);
-	}
-
-	/**
 	 * Return a "pretty" name for this token, such as "site:box"
 	 *
 	 * @return string The pretty token name
@@ -334,10 +314,27 @@ class Token
 		return $this->ns . ':' . $this->name;
 	}
 
+	public function matches($nsuri = null, $name = null, $type = null)
+	{
+		if ($nsuri !== null && $this->nsuri !== $nsuri)
+			return false;
+
+		if ($name !== null && $this->name !== $name)
+			return false;
+
+		if ($type !== null && $this->type !== $type)
+			return false;
+
+		return true;
+	}
+
+	public function isComment()
+	{
+		return $this->type === 'comment-start' || $this->type === 'comment' || $this->type === 'comment-end';
+	}
+
 	/**
 	 * Toss an exception from this token
-	 *
-	 * @todo restore full exceptions
 	 *
 	 * @param string $key
 	 *

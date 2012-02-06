@@ -19,7 +19,7 @@ class Filters
 		'money_format' => '',
 	);
 
-	// @todo: improve this, it's ugly. Also throw an exception.
+	// @todo: improve this, it's ugly. Also throw an exception. It doesn't do anything right now!
 	protected static function _requireParams($num, $params)
 	{
 		if (count($params) < $num)
