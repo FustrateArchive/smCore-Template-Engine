@@ -33,7 +33,7 @@ class Layer extends Cleaner
 
 		$new_tokens = array($insert);
 
-		// Keep track of the template and blocks we might find tpl:content in.
+		// Keep track of the macro references and blocks we might find tpl:content in.
 		$inside_blocks = array();
 		$found_content_tag = false;
 

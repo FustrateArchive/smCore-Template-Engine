@@ -21,7 +21,7 @@ class TemplateList
 	protected $_loaded = false;
 	protected $_loaded_classes = array();
 
-	protected static $_registered_templates = array();
+	protected static $_registered_macros = array();
 	protected static $_block_listeners = array();
 
 	/**
@@ -77,7 +77,7 @@ class TemplateList
 	/**
 	 * Add a template to the template list
 	 *
-	 * @param string $type The file of file to parse this as (layer, view, templates, blocks)
+	 * @param string $type The file of file to parse this as (layer, view, macros, blocks)
 	 * @param string $source_file The source file name
 	 * @param string $cache_file The cache file name
 	 * @param string $class_name The class name that this template will be saved under
@@ -115,36 +115,23 @@ class TemplateList
 
 		Parser::setNamespaces($this->_namespaces);
 
-		// We'll want to do these in a specific order
-		if (!empty($this->_files['templates']))
+		if (!empty($this->_files['macros']))
 		{
-			$cleaner = new Cleaner\Templates();
-			$finished = array();
-			$defined_templates = array();
+			$cleaner = new Cleaner\Macros();
 
-			foreach ($this->_files['templates'] as $file)
+			foreach ($this->_files['macros'] as $file)
 			{
-				$parser = new Parser\Templates($file['source_file']);
+				$parser = new Parser\Macros($file['source_file']);
 				$parser->parse();
 
 				$file['tokens'] = $parser->getTokens();
-				$file['defined_templates'] = $parser->getDefinedTemplates();
-
-				$defined_templates = array_merge($defined_templates, $file['defined_templates']);
 
 				$cleaner->clean($file['tokens'], $file['source_file']);
 
-				$finished[] = $file;
-			}
-
-			Builder::setDefinedTemplates($defined_templates);
-
-			// Build all templates here, so that we have them for later.
-			foreach ($finished as $file)
 				$this->_builder->build($file);
+			}
 		}
 
-		// We'll want to do these in a specific order
 		if (!empty($this->_files['blocks']))
 		{
 			$cleaner = new Cleaner\Blocks();
@@ -242,43 +229,43 @@ class TemplateList
 	}
 
 	/**
-	 * Call a template from inside a template file.
+	 * Call a macro from inside a template.
 	 *
-	 * @param string $name The name of the template to call, such as 'badges:mini_grid'
+	 * @param string $name The name of the macro to call, such as 'badges:mini_grid'
 	 * @param string $side Which side to call, 'above', 'below', or 'both'
 	 * @param array $parameters
 	 *
 	 * @access public
 	 */
-	public static function callTemplate($name, $side, array $parameters = array())
+	public static function callMacro($name, $side, array $parameters = array())
 	{
-		if (array_key_exists($name, self::$_registered_templates))
+		if (array_key_exists($name, self::$_registered_macros))
 		{
 			if ($side === 'above' || $side === 'both')
 			{
-				$method = 'template_' . str_replace(':', '_', $name) . '_above';
-				self::$_registered_templates[$name]->{$method}($parameters);
+				$method = 'macro_' . str_replace(':', '_', $name) . '_above';
+				self::$_registered_macros[$name]->{$method}($parameters);
 			}
 
 			if ($side === 'below' || $side === 'both')
 			{
-				$method = 'template_' . str_replace(':', '_', $name) . '_below';
-				self::$_registered_templates[$name]->{$method}($parameters);
+				$method = 'macro_' . str_replace(':', '_', $name) . '_below';
+				self::$_registered_macros[$name]->{$method}($parameters);
 			}
 		}
 	}
 
 	/**
-	 * Claim ownership of a specific template name.
+	 * Claim ownership of a specific macro name.
 	 *
-	 * @param string $name The name of the template to claim, such as "site:menu"
+	 * @param string $name The name of the macro to claim, such as "site:menu"
 	 * @param smCore\TemplateEngine\Template $owner The class which claims ownership.
 	 *
 	 * @access public
 	 */
-	public static function registerTemplate($name, Template $owner)
+	public static function registerMacro($name, Template $owner)
 	{
-		self::$_registered_templates[$name] = $owner;
+		self::$_registered_macros[$name] = $owner;
 	}
 
 	/**

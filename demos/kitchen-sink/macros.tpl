@@ -1,6 +1,6 @@
 <!---
-	This file contains template definitions for us to use elsewhere, over and over again. We
-	can define blocks inside templates, and the type of template is determined by the
+	This file contains macro definitions for us to use elsewhere, over and over again. We
+	can define blocks inside macros, and the type of macro is determined by the
 	presence or absence of a <tpl:content /> tag.
 --->
 
@@ -9,20 +9,20 @@
 	<tpl:content /> tag. If you try to use this as a start and end tag pair, an exception
 	will be thrown.
 --->
-<tpl:template name="site:menu" requires="menu">
+<tpl:macro name="site:menu" requires="menu">
 	<ul id="menu"><tpl:foreach from="{$menu}" as="{$item}">
 		<li{tpl:if test="{$item.active}"} class="active"{/tpl:if}>
 			<a href="{$item.link}">{$item.label}</a>
 		</li></tpl:foreach>
 	</ul>
-</tpl:template>
+</tpl:macro>
 
 <!---
-	If you use this template as an empty tag, <site:info_box />, it will just output the top
+	If you use this macro as an empty tag, <site:info_box />, it will just output the top
 	and bottom one after the other. Otherwise, whatever you put between the start and end tags
 	will go where <tpl:content /> is.
 --->
-<tpl:template name="site:info_box">
+<tpl:macro name="site:info_box">
 	<h1>Info</h1>
 	<div>
 		<tpl:content />
@@ -30,17 +30,17 @@
 	<tpl:block name="site:info_box_footer">
 		Hello! <site:say name="Steven" />
 	</tpl:block>
-</tpl:template>
+</tpl:macro>
 
 <!---
-	Lastly, this is a template that has a block inside it. Whenever this template is used, we'll
+	Lastly, this is a macro that has a block inside it. Whenever this macro is used, we'll
 	see if there are block references that have been loaded, and run them each time.
 --->
-<tpl:template name="site:block_template">
+<tpl:macro name="site:block_macro">
 	<h1>With Block!</h1>
-	<div><tpl:block name="site:block_with_block">
+	<div><tpl:block name="site:macro_with_block">
 		<tpl:content /></tpl:block>
 	</div>
-</tpl:template>
+</tpl:macro>
 
-<tpl:template name="site:say" requires="name">Yo {$name}!</tpl:template>
+<tpl:macro name="site:say" requires="name">Yo {$name}!</tpl:macro>

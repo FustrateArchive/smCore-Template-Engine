@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Template Cleaner
+ * Macro Template Cleaner
  *
  * Cleans up tokens, so that the builder can just zip through them.
  *
@@ -14,7 +14,7 @@
 namespace smCore\TemplateEngine\Cleaner;
 use smCore\TemplateEngine\Cleaner, smCore\TemplateEngine\Token, smCore\TemplateEngine\Parser;
 
-class Templates extends Cleaner
+class Macros extends Cleaner
 {
 	public function clean(array &$tokens, $source_filename)
 	{
@@ -23,56 +23,56 @@ class Templates extends Cleaner
 
 		$new_tokens = array();
 
-		// Keep track of the template and blocks we might find tpl:content in.
-		$template_token = null;
+		// Keep track of the macro calls and blocks we might find tpl:content in.
+		$macro_token = null;
 		$inside_blocks = array();
 
 		foreach ($tokens as $token)
 		{
-			if ($token->matches(Parser::TPL_NSURI, 'template', 'tag-start'))
+			if ($token->matches(Parser::TPL_NSURI, 'macro', 'tag-start'))
 			{
 				$token->attributes['__type'] = 'above';
 
-				$template_token = $token;
+				$macro_token = $token;
 				$new_tokens[] = $token;
 			}
-			else if ($token->matches(Parser::TPL_NSURI, 'template', 'tag-end'))
+			else if ($token->matches(Parser::TPL_NSURI, 'macro', 'tag-end'))
 			{
-				// Exit the template, and give this end tag its "type" attribute.
-				$token->attributes['__type'] = $template_token->attributes['__type'];
+				// Exit the macro, and give this end tag its "type" attribute.
+				$token->attributes['__type'] = $macro_token->attributes['__type'];
 
 				$new_tokens[] = $token;
 
 				if ($token->attributes['__type'] === 'above')
 				{
 					$insert = new Token(array(
-						'data' => $template_token->data,
+						'data' => $macro_token->data,
 						'type' => 'tag-start',
 						'file' => $token->file,
 						'line' => $token->line,
 					));
 					$insert->attributes = array(
-						'name' => $template_token->attributes['name'],
+						'name' => $macro_token->attributes['name'],
 						'__type' => 'below',
 					);
 
 					$new_tokens[] = $insert;
 
 					$insert = new Token(array(
-						'data' => '</tpl:template>',
+						'data' => '</tpl:macro>',
 						'type' => 'tag-end',
 						'file' => $token->file,
 						'line' => $token->line,
 					));
 					$insert->attributes = array(
-						'name' => $template_token->attributes['name'],
+						'name' => $macro_token->attributes['name'],
 						'__type' => 'below',
 					);
 
 					$new_tokens[] = $insert;
 				}
 
-				$template_token = null;
+				$macro_token = null;
 			}
 			else if ($token->matches(Parser::TPL_NSURI, 'block', 'tag-start'))
 			{
@@ -140,31 +140,31 @@ class Templates extends Cleaner
 
 				// A semi-clone of the top token
 				$end_token = new Token(array(
-					'data' => '</tpl:template>',
+					'data' => '</tpl:macro>',
 					'type' => 'tag-end',
 					'file' => $token->file,
 					'line' => $token->line,
 				), true);
-				$end_token->attributes = $template_token->attributes;
+				$end_token->attributes = $macro_token->attributes;
 
 				$new_tokens[] = $end_token;
 
 				// And another weird hybrid clone
 				$start_token = new Token(array(
-					'data' => $template_token->data,
+					'data' => $macro_token->data,
 					'type' => 'tag-start',
 					'file' => $token->file,
 					'line' => $token->line,
 				), true);
 				$start_token->attributes = array(
-					'name' => $template_token->attributes['name'],
+					'name' => $macro_token->attributes['name'],
 					'__type' => 'below',
 				);
 
 				$new_tokens[] = $start_token;
 
 				// Now pretend we're in this new tag!
-				$template_token = $start_token;
+				$macro_token = $start_token;
 
 				if (!empty($inside_blocks))
 				{

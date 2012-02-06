@@ -17,7 +17,7 @@ use smCore\TemplateEngine\Parser, smCore\TemplateEngine\Token, smCore\TemplateEn
 class View extends Parser
 {
 	/**
-	 * We're going to disallow some tags, like <tpl:template> and <tpl:content />
+	 * We're going to disallow some tags, like <tpl:macro> and <tpl:content />
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -25,8 +25,8 @@ class View extends Parser
 	 */
 	protected function _parseTag(Token $token)
 	{
-		if ($token->matches(Parser::TPL_NSURI, 'template'))
-			$token->toss('Templates cannot be defined inside views - they require their own file loaded via ->loadTemplates().');
+		if ($token->matches(Parser::TPL_NSURI, 'macro'))
+			$token->toss('Macros cannot be defined inside views - they require their own file loaded via ->loadMacros().');
 
 		if ($token->matches(Parser::TPL_NSURI, 'content'))
 			$token->toss('Views cannot contain <tpl:content />. If you are trying to load a layer, use ->loadLayer().');

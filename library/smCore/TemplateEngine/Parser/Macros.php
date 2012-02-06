@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Template Parser
+ * Macro Template Parser
  *
  * @package smCore Template Engine
  * @author Steven "Fustrate" Hoffman
@@ -12,12 +12,12 @@
 namespace smCore\TemplateEngine\Parser;
 use smCore\TemplateEngine\Parser, smCore\TemplateEngine\Token, smCore\TemplateEngine\Source;
 
-class Templates extends Parser
+class Macros extends Parser
 {
-	protected $_defined_templates = array();
+	protected $_defined_macros = array();
 
 	/**
-	 * Template files don't get anything outside of the <tpl:template> tags.
+	 * Macro files don't get anything outside of the <tpl:macro> tags.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -31,14 +31,14 @@ class Templates extends Parser
 			if (trim($this->data) === '')
 				array_pop($this->_tokens);
 			else
-				$token->toss('tpl_template_content_outside');
+				$token->toss('tpl_macro_content_outside');
 		}
 
 		parent::_parseContent($token);
 	}
 
 	/**
-	 * No references outside the template start and end tags, either.
+	 * No references outside the macro start and end tags, either.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -47,13 +47,13 @@ class Templates extends Parser
 	protected function _parseRef(Token &$token)
 	{
 		if ($this->_state === 'outside')
-			$token->toss('tpl_template_ref_outside');
+			$token->toss('tpl_macro_ref_outside');
 
 		parent::_parseRef($token);
 	}
 
 	/**
-	 * The only tags that can be outside of anything else in here are tpl:template and tpl:options.
+	 * The only tags that can be outside of anything else in here are tpl:macro and tpl:options.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -61,19 +61,19 @@ class Templates extends Parser
 	 */
 	protected function _parseTag(Token $token)
 	{
-		if ($token->matches(Parser::TPL_NSURI, 'template'))
+		if ($token->matches(Parser::TPL_NSURI, 'macro'))
 		{
 			if ($this->_state !== 'outside')
-				$token->toss('tpl_template_must_be_outside');
+				$token->toss('tpl_macro_must_be_outside');
 
 			if ($token->type === 'tag-empty')
-				$token->toss('tpl_template_must_be_not_empty');
+				$token->toss('tpl_macro_must_be_not_empty');
 
 			if (empty($token->attributes['name']))
-				$token->toss('tpl_template_missing_name');
+				$token->toss('tpl_macro_missing_name');
 
 			if (strpos($token->attributes['name'], ':') === false)
-				$token->toss('tpl_template_name_without_ns', $token->attributes['name']);
+				$token->toss('tpl_macro_name_without_ns', $token->attributes['name']);
 
 			// Figure out the namespace and validate it.
 			list ($ns, $name) = explode(':', $token->attributes['name'], 2);
@@ -84,27 +84,27 @@ class Templates extends Parser
 			$nsuri = Source::getNamespace($ns);
 
 			if ($nsuri === false)
-				$token->toss('tpl_template_name_unknown_ns', $ns);
+				$token->toss('tpl_macro_name_unknown_ns', $ns);
 
 			if (strlen($name) === 0)
-				$token->toss('tpl_template_name_empty_name', $token->attributes['name']);
+				$token->toss('tpl_macro_name_empty_name', $token->attributes['name']);
 
 			// Templates can't be redefined in the same file
-			if (isset($this->_defined_templates[$token->attributes['name']]))
-				$token->toss('tpl_template_duplicate_name', $ns . ':' . $name);
+			if (isset($this->_defined_macros[$token->attributes['name']]))
+				$token->toss('tpl_macro_duplicate_name', $ns . ':' . $name);
 
-			$this->_defined_templates[$token->attributes['name']] = $token;
+			$this->_defined_macros[$token->attributes['name']] = $token;
 
-			$this->_state = 'template';
+			$this->_state = 'macro';
 		}
 		else if ($this->_state === 'outside' && !$token->matches(Parser::TPL_NSURI, 'options'))
-			$token->toss('tpl_template_tag_outside');
+			$token->toss('tpl_macro_tag_outside');
 
 		parent::_parseTag($token);
 	}
 
 	/**
-	 * Reset the state, if we encountered the end of a template here.
+	 * Reset the state, if we encountered the end of a macro here.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -112,21 +112,21 @@ class Templates extends Parser
 	 */
 	protected function _parseTagEnd(Token $token)
 	{
-		if ($token->matches(Parser::TPL_NSURI, 'template'))
+		if ($token->matches(Parser::TPL_NSURI, 'macro'))
 			$this->_state = 'outside';
 
 		parent::_parseTagEnd($token);
 	}
 
 	/**
-	 * Returns the names of all templates defined in this file.
+	 * Returns the names of all macros defined in this file.
 	 *
 	 * @return array Template names
 	 *
 	 * @access public
 	 */
-	public function getDefinedTemplates()
+	public function getDefinedMacros()
 	{
-		return $this->_defined_templates;
+		return $this->_defined_macros;
 	}
 }

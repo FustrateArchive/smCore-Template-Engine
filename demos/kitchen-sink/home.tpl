@@ -1,5 +1,5 @@
 <!---
-	Views are simple - they just output content. They can define blocks and use templates,
+	Views are simple - they just output content. They can define blocks and use macros,
 	but they can't use <tpl:content /> (then it would be a layer) or override/alter other blocks.
 --->
 

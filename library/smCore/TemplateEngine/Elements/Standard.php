@@ -15,8 +15,6 @@ use smCore\TemplateEngine\Elements, smCore\TemplateEngine\Builder, smCore\Templa
 
 class Standard extends Elements
 {
-	protected $template_push_level = 0;
-
 	public function setBuildListeners($template)
 	{
 		// In case any state is needed.
@@ -33,8 +31,6 @@ class Standard extends Elements
 			'if',
 			'output',
 			'set',
-			'template-pop',
-			'template-push',
 		);
 
 		foreach ($tags as $tag)
@@ -69,7 +65,7 @@ class Standard extends Elements
 			{
 				$k = '\'' . addcslashes(Expression::makeVarName($k), '\\\'') . '\'';
 
-				// The string passed to templates will get double-escaped unless we unescape it here.
+				// The string passed to macros will get double-escaped unless we unescape it here.
 				// We don't do this for tpl: things, though, just for calls.
 				$attributes[] = $k . ' => ' . Expression::stringWithVars(html_entity_decode($v), $token);
 			}
@@ -311,42 +307,5 @@ class Standard extends Elements
 			$value = $builder->parseExpression('normal', $attributes['value'], $token);
 			$builder->emitCode($var . ' ' . ($attributes['append'] ? '.' : '') . '= ' . $value . ';', $token);
 		}
-	}
-
-	public function tpl_template_push(Builder $builder, $type, array $attributes, Token $token)
-	{
-		$this->_requireEmpty($token);
-
-		$args = array();
-		$save = array();
-		foreach ($attributes as $k => $v)
-		{
-			$k = '\'' . addcslashes(Expression::makeVarName($k), '\\\'') . '\'';
-			$save[] = $k;
-			$args[] = $k . ' => ' . $builder->parseExpression('stringWithVars', $v, $token);
-		}
-
-		// First, save the existing variables (if any.)
-		$builder->emitCode('global $__toxg_stack; if (!isset($__toxg_stack)) $__toxg_stack = array();', $token);
-		$builder->emitCode('array_push($__toxg_stack, compact(' . implode(', ', $save) . '));', $token);
-
-		// Next, overwrite them with the args.
-		$builder->emitCode('extract(array(' . implode(', ', $args) . '), EXTR_OVERWRITE);', $token);
-
-		// Just to match things up.
-		$this->template_push_level++;
-	}
-
-	public function tpl_template_pop(Builder $builder, $type, array $attributes, Token $token)
-	{
-		$this->_requireEmpty($token);
-		if ($this->template_push_level <= 0)
-			$token->toss('tpl_template_pop_without_push');
-
-		// Just restore the previously saved variables, actually.
-		$builder->emitCode('global $__toxg_stack; extract(array_pop($__toxg_stack), EXTR_OVERWRITE);', $token);
-
-		// Just to match things up.
-		$this->template_push_level--;
 	}
 }

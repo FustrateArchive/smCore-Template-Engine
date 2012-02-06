@@ -17,7 +17,7 @@ use smCore\TemplateEngine\Parser, smCore\TemplateEngine\Token, smCore\TemplateEn
 class Layer extends Parser
 {
 	/**
-	 * We're going to disallow <tpl:template> tags
+	 * We're going to disallow <tpl:macro> tags
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -25,8 +25,8 @@ class Layer extends Parser
 	 */
 	protected function _parseTag(Token $token)
 	{
-		if ($token->matches(Parser::TPL_NSURI, 'template'))
-			$token->toss('Templates cannot be defined inside layers - they require their own file loaded via ->loadTemplates().');
+		if ($token->matches(Parser::TPL_NSURI, 'macro'))
+			$token->toss('Macros cannot be defined inside layers - they require their own file loaded via ->loadMacros().');
 
 		parent::_parseTag($token);
 	}

@@ -24,11 +24,10 @@ class Builder
 
 	protected $_last_line = 1;
 	protected $_last_file = null;
-	protected $_last_template = null;
 
 	protected $_listeners = array();
 
-	protected static $_defined_templates = array();
+	protected static $_defined_macros = array();
 	protected $_block_refs = array();
 
 	public function __construct()
@@ -60,9 +59,9 @@ class Builder
 		$this->_debugging = (boolean) $debugging;
 	}
 
-	public static function setDefinedTemplates(array $defined_templates)
+	public static function setDefinedMacros(array $defined_macros)
 	{
-		self::$_defined_templates = $defined_templates;
+		self::$_defined_macros = $defined_macros;
 	}
 
 	/**
@@ -143,8 +142,8 @@ class Builder
 		// We don't emit the __construct function until the end, so that we know what templates and blocks we used.
 		$this->emitCode('public function __construct() {parent::__construct();');
 
-		if (!empty($template['defined_templates']))
-			$this->emitCode('$this->_registerTemplates(array(\'' . implode('\', \'', array_keys($template['defined_templates'])) . '\'));');
+		if (!empty($template['defined_macros']))
+			$this->emitCode('$this->_registerTemplates(array(\'' . implode('\', \'', array_keys($template['defined_macros'])) . '\'));');
 
 		if (!empty($this->_block_refs))
 		{
@@ -161,9 +160,6 @@ class Builder
 		$this->emitCode('}}');
 
 		$this->_closeCacheFile();
-
-		if ($this->_last_template !== null)
-			throw new Exception('builder_unclosed_template');
 	}
 
 	/**
@@ -217,11 +213,11 @@ class Builder
 	{
 		if ($token->nsuri === Parser::TPL_NSURI)
 		{
-			if ($token->name === 'template')
+			if ($token->name === 'macro')
 			{
 				if ($token->type === 'tag-start')
 				{
-					$this->emitCode('function template_' . str_replace(':', '_', $token->attributes['name']) . '_' . $token->attributes['__type'] . '($context) { $me = $this;');
+					$this->emitCode('function macro_' . str_replace(':', '_', $token->attributes['name']) . '_' . $token->attributes['__type'] . '($context) { $me = $this;');
 
 					if ($this->_debugging)
 					{
@@ -296,9 +292,10 @@ class Builder
 		{
 			$full_name = $token->prettyName();
 
-			if (array_key_exists($full_name, self::$_defined_templates))
+			// @todo: do this at runtime, so we can dynamically change out macros and not need to recompile or use hashes
+			if (array_key_exists($full_name, self::$_defined_macros))
 			{
-				$template_token = self::$_defined_templates[$full_name];
+				$macro_token = self::$_defined_macros[$full_name];
 
 				$args_escaped = array();
 				$arg_names = array();
@@ -308,25 +305,25 @@ class Builder
 				{
 					$arg_names[] = Expression::makeVarName($k);
 
-					// The string passed to templates ($v) will get double-escaped unless we unescape it here.
+					// The string passed to macros ($v) will get double-escaped unless we unescape it here.
 					// We don't do this for tpl: things, though, just for calls.
 					$args_escaped[] = '\'' . addcslashes(Expression::makeVarName($k), '\\\'') . '\' => ' . $this->parseExpression('stringWithVars', html_entity_decode($v), $token);
 				}
 
-				if (!empty($template_token->attributes['requires']))
+				if (!empty($macro_token->attributes['requires']))
 				{
-					$requires = array_filter(array_map('trim', preg_split('~[\s,]+~', $template_token->attributes['requires'])));
+					$requires = array_filter(array_map('trim', preg_split('~[\s,]+~', $macro_token->attributes['requires'])));
 					$missing = array_diff($requires, $arg_names);
 
 					if (!empty($missing))
-						$token->toss('template_missing_required', $full_name, implode(', ', $missing), $template_token->file, $template_token->line);
+						$token->toss('macro_missing_required', $full_name, implode(', ', $missing), $macro_token->file, $macro_token->line);
 				}
 
 				if ($token->type === 'tag-start' || $token->type === 'tag-empty')
-					$this->emitCode('$tpl->callTemplate(\'' . $full_name . '\', \'above\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
+					$this->emitCode('$tpl->callMacro(\'' . $full_name . '\', \'above\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
 
 				if ($token->type === 'tag-end' || $token->type === 'tag-empty')
-					$this->emitCode('$tpl->callTemplate(\'' . $full_name . '\', \'below\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
+					$this->emitCode('$tpl->callMacro(\'' . $full_name . '\', \'below\', array_merge($context, array(' . implode(', ', $args_escaped) . ')));');
 			}
 			else
 			{
@@ -496,7 +493,7 @@ class Builder
 	 */
 	protected function _emitDebugPos(Token $token, $type = 'code', $force = false)
 	{
-		// Okay, maybe we don't need to bulk up the template.  Let's see how we can get out of updating the pos.
+		// Okay, maybe we don't need to bulk up the file. Let's see how we can get out of updating the pos.
 
 		// If the file is the same, we have a chance.
 		if ($token->file === $this->_last_file && !$force)
@@ -511,7 +508,7 @@ class Builder
 				return false;
 			}
 
-			// Okay, this means the line number was lower (template?) so let's go.
+			// Okay, this means the line number was lower so let's go.
 		}
 
 		// In case this is actually a database "filename" or something, don't wipe it out.

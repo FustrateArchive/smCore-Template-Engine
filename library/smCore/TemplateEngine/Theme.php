@@ -136,25 +136,25 @@ class Theme
 	}
 
 	/**
-	 * Load templates that we can reuse elsewhere.
+	 * Load macros that we can reuse elsewhere.
 	 *
 	 * @param string $filename The filename to load
 	 *
 	 * @access public
 	 */
-	public function loadTemplates($filename)
+	public function loadMacros($filename)
 	{
-		$this->_files['templates'][] = $filename;
+		$this->_files['macros'][] = $filename;
 	}
 
 	/**
-	 * Reset the list of template files to load.
+	 * Reset the list of macro files to load.
 	 *
 	 * @access public
 	 */
-	public function resetTemplates()
+	public function resetMacros()
 	{
-		$this->_files['templates'] = array();
+		$this->_files['macros'] = array();
 	}
 
 	/**
@@ -197,13 +197,6 @@ class Theme
 	public function output()
 	{
 		$filename_classes = array();
-
-		$files = array(
-			'layers' => $this->_layers,
-			'views' => $this->_views,
-			'templates' => $this->_templates,
-			'blocks' => $this->_blocks,
-		);
 
 		foreach ($this->_files as $type => $files)
 		{

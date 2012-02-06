@@ -47,23 +47,23 @@ class Template
 	 * @return 
 	 * @access 
 	 */
-	protected function _registerTemplates(array $templates = array())
+	protected function _registerMacros(array $templates = array())
 	{
-		foreach ($templates as $name)
-			TemplateList::registerTemplate($name, $this);
+		foreach ($macros as $macro)
+			TemplateList::registerMacro($macro, $this);
 	}
 
 	/**
-	 * Call a template from inside a view, layer, block, or template
+	 * Call a macro from inside a view, layer, block, or another macro.
 	 *
 	 * @param string $name
 	 * @param string $side
-	 * @param array $parameters8
+	 * @param array $parameters
 	 *
 	 * @access public
 	 */
-	public function callTemplate($name, $side, $parameters)
+	public function callMacro($name, $side, $parameters)
 	{
-		TemplateList::callTemplate($name, $side, $parameters);
+		TemplateList::callMacro($name, $side, $parameters);
 	}
 }

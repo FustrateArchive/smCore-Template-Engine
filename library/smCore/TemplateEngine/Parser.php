@@ -253,7 +253,7 @@ abstract class Parser
 	}
 
 	/**
-	 * <tpl:content /> tokens split layers and templates. Make sure they're empty.
+	 * <tpl:content /> tokens split layers and macros. Make sure they're empty.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -265,12 +265,12 @@ abstract class Parser
 		if ($token->type !== 'tag-empty')
 			$token->toss('tpl_content_must_be_empty');
 
-		// tpl:content can only be a child of tpl:template or tpl:block elements
+		// tpl:content can only be a child of tpl:macro or tpl:block elements
 		if (!empty($this->_tree))
 		{
 			foreach ($this->_tree as $tag)
 			{
-				if ($tag->nsuri === Parser::TPL_NSURI && $tag->name !== 'template' && $tag->name !== 'block')
+				if ($tag->nsuri === Parser::TPL_NSURI && $tag->name !== 'macro' && $tag->name !== 'block')
 					$token->toss('tpl_content_misplaced');
 			}
 		}
@@ -291,13 +291,12 @@ abstract class Parser
 		if ($token->type !== 'tag-empty')
 			$token->toss('tpl_parent_must_be_empty');
 
-		// tpl:content can only be a child of tpl:template or tpl:block elements
 		if (!empty($this->_tree))
 		{
 			foreach ($this->_tree as $tag)
 			{
 				if ($tag->nsuri === Parser::TPL_NSURI)
-					$token->toss('tpl_content_misplaced');
+					$token->toss('tpl_parent_misplaced');
 			}
 		}
 	}

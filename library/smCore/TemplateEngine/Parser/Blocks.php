@@ -38,7 +38,7 @@ class Blocks extends Parser
 	}
 
 	/**
-	 * No references outside the template start and end tags, either.
+	 * No references outside the macro start and end tags, either.
 	 *
 	 * @param smCore\TemplateEngine\Token $token
 	 *
@@ -98,14 +98,14 @@ class Blocks extends Parser
 	}
 
 	/**
-	 * Returns the names of all templates defined in this file.
+	 * Returns the names of all macros defined in this file.
 	 *
 	 * @return array Template names
 	 *
 	 * @access public
 	 */
-	public function getDefinedTemplates()
+	public function getDefinedMacros()
 	{
-		return $this->_defined_templates;
+		return $this->_defined_macros;
 	}
 }

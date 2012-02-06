@@ -30,7 +30,7 @@ $theme->loadLayer(__DIR__ . '/main_layer.tpl');
 $theme->loadView(__DIR__ . '/home.tpl');
 
 // Stuff to use in the layers/views
-$theme->loadTemplates(__DIR__ . '/templates.tpl');
+$theme->loadMacros(__DIR__ . '/macros.tpl');
 $theme->loadBlocks(__DIR__ . '/block_refs.tpl');
 
 $theme->output();

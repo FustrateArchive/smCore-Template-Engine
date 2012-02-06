@@ -10,6 +10,6 @@ $theme->context['site_name'] = 'my site';
 
 $theme->loadLayer(__DIR__ . '/html_layer.tpl');
 $theme->loadView(__DIR__ . '/my_view.tpl');
-$theme->loadTemplates(__DIR__ . '/custom_templates.tpl');
+$theme->loadMacros(__DIR__ . '/custom_macros.tpl');
 
 $theme->output();

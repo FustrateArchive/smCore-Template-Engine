@@ -12,10 +12,10 @@ class Blocks extends Cleaner
 			return;
 
 		/**
-		 * @todo: Allow for template calls inside blocks of the same name. It shouldn't
-		 * be allowed anyways, but people are going to try it anyways. Right now it will
-		 * get caught up in the end tag of the template part, thinking we're ending the
-		 * block reference instead of just the template.
+		 * @todo: Allow for macro calls inside blocks of the same name. It shouldn't
+		 * be allowed, but people are going to try it anyways. Right now it will get
+		 * caught up in the end tag of the macro part, thinking we're ending the
+		 * block reference instead of just the macro.
 		 */
 
 		$new_tokens = array();
